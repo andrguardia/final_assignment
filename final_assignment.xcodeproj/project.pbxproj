@@ -14,6 +14,12 @@
 		AB3F0D3429EA091500181856 /* final_assignmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D3329EA091500181856 /* final_assignmentTests.swift */; };
 		AB3F0D3E29EA091500181856 /* final_assignmentUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D3D29EA091500181856 /* final_assignmentUITests.swift */; };
 		AB3F0D4029EA091500181856 /* final_assignmentUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D3F29EA091500181856 /* final_assignmentUITestsLaunchTests.swift */; };
+		AB3F0D4D29FB13A300181856 /* Hamiltonian.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D4C29FB13A300181856 /* Hamiltonian.swift */; };
+		AB3F0D4E29FB13A300181856 /* Hamiltonian.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D4C29FB13A300181856 /* Hamiltonian.swift */; };
+		AB3F0D4F29FB13A300181856 /* Hamiltonian.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D4C29FB13A300181856 /* Hamiltonian.swift */; };
+		AB3F0D5129FB1FFF00181856 /* Matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D5029FB1FFF00181856 /* Matrix.swift */; };
+		AB3F0D5229FB1FFF00181856 /* Matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D5029FB1FFF00181856 /* Matrix.swift */; };
+		AB3F0D5329FB1FFF00181856 /* Matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D5029FB1FFF00181856 /* Matrix.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,6 +51,8 @@
 		AB3F0D3929EA091500181856 /* final_assignmentUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = final_assignmentUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB3F0D3D29EA091500181856 /* final_assignmentUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = final_assignmentUITests.swift; sourceTree = "<group>"; };
 		AB3F0D3F29EA091500181856 /* final_assignmentUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = final_assignmentUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		AB3F0D4C29FB13A300181856 /* Hamiltonian.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hamiltonian.swift; sourceTree = "<group>"; };
+		AB3F0D5029FB1FFF00181856 /* Matrix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Matrix.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +105,8 @@
 			children = (
 				AB3F0D2129EA091400181856 /* final_assignmentApp.swift */,
 				AB3F0D2329EA091400181856 /* ContentView.swift */,
+				AB3F0D4C29FB13A300181856 /* Hamiltonian.swift */,
+				AB3F0D5029FB1FFF00181856 /* Matrix.swift */,
 				AB3F0D2529EA091500181856 /* Assets.xcassets */,
 				AB3F0D2729EA091500181856 /* final_assignment.entitlements */,
 				AB3F0D2829EA091500181856 /* Preview Content */,
@@ -259,8 +269,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB3F0D5129FB1FFF00181856 /* Matrix.swift in Sources */,
 				AB3F0D2429EA091400181856 /* ContentView.swift in Sources */,
 				AB3F0D2229EA091400181856 /* final_assignmentApp.swift in Sources */,
+				AB3F0D4D29FB13A300181856 /* Hamiltonian.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -268,7 +280,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB3F0D4E29FB13A300181856 /* Hamiltonian.swift in Sources */,
 				AB3F0D3429EA091500181856 /* final_assignmentTests.swift in Sources */,
+				AB3F0D5229FB1FFF00181856 /* Matrix.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -276,8 +290,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB3F0D5329FB1FFF00181856 /* Matrix.swift in Sources */,
 				AB3F0D4029EA091500181856 /* final_assignmentUITestsLaunchTests.swift in Sources */,
 				AB3F0D3E29EA091500181856 /* final_assignmentUITests.swift in Sources */,
+				AB3F0D4F29FB13A300181856 /* Hamiltonian.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
