@@ -24,19 +24,22 @@ class Hamiltonian: NSObject {
     //G = hb_1 + kb_2+lb_3
     // Where b_n is our reciprocal lattice basis and h,k, and l are a set of integers centered around zero.
     
-    func coefficients(m: Int, states: Int) -> (Int, Int, Int) {
-        //This function calculates the coefficients for the reciprocal lattice vectors
-        //The function takes two integer parameters, m and states, and returns a tuple of three integers. The Swift version uses integer division instead of floor division and the tuple is enclosed in parentheses instead of commas.
-        let n = (states*states*states) / 2
+    
+    func coefficients(m: Int, states: Int) -> [Double] {
+    //This function calculates the coefficients for the reciprocal lattice vectors
+    //The function takes two integer parameters, m and states, and returns a tuple of three integers. The Swift version uses integer division instead of floor division and the tuple is enclosed in parentheses instead of commas.
+        
+    //The function first calculates the total number of lattice sites, n, by raising the number of states to the power of three and dividing by two. Then, it calculates the sum s of m and n, and computes the indices h, k, and l by using integer division and modulo operations on s and the number of states. Finally, the function returns the tuple (h, k, l) containing the computed indices.
+    // This implementation is Bard on A. Danner (2004)in his implementation of this same problem in Mathematica: http://danner.group/pseudopotential.html
+        let n = (states * states * states) / 2
         let s = m + n
         let floor = states / 2
-
-        let h = s / (states*states) - floor
-        let k = (s % (states*states)) / states - floor
-        let l = s % states - floor
-
-        return (h, k, l)
+        let h = Double(s / (states * states) - floor)
+        let k = Double((s % (states * states)) / states - floor)
+        let l = Double(s % states - floor)
+        return [h, k, l]
     }
+
     
     //We proceed to calculate the kinetic term of the Hamiltonian.
     //                  Tij = hbar^2/(2m) * [[k+G]]^2 * δi,j
@@ -77,12 +80,56 @@ class Hamiltonian: NSObject {
     }
 
 
+    func hamiltonian(latticeConstant: Double, formFactors: [Double: [Double]], reciprocalBasis: [Double], k: [Double], states: Int) -> [[Complex<Double>]] {
+        
+        let a = latticeConstant
+        let ff = formFactors
+        let basis = reciprocalBasis
+        
+        // some constants that don't need to be recalculated
+        let kinetic_c = pow(2 * Double.pi / a, 2)
+        var offset: [Double] = [0.125, 0.125, 0.125]
+        
+        // states determines size of matrix
+        // each of the three reciprocal lattice vectors can
+        // take on this many states, centered around zero
+        // resulting in an n^3 x n^3 matrix
+        let n = pow(Double(states), 3)
+        
+        // initialize our matrix to arbitrary elements
+        var H = Array(repeating: Array(repeating: Complex<Double>(real: 0.0, imaginary: 0.0), count: Int(N)), count: Int(N))
+
+        
+        // iterate over each row and column of the matrix
+            for row in 0..<Int(n) {
+                for col in 0..<Int(n) {
+                    
+                    // if row and column index are the same, calculate kinetic energy
+                    if row == col {
+                        // calculate the reciprocal lattice vector for this row
+                        let g = [dot(coefficients(m: row - Int(n / 2), states: states),basis)]
+                        // calculate the kinetic energy and assign it to the matrix
+                        H[row][col] = Complex<Double>(real: kinetic_c * kinetic(k: k, g: g), imaginary: 0)
+                    } else {
+                        // calculate the reciprocal lattice vector for this pair of rows and columns
+                        let g = [dot(coefficients(m: row - col, states: states), basis)]
+                        // get the form factors associated with the magnitude of the reciprocal lattice vector
+                        let symfactors = ff[dot(g,g)]
+                        let asymfactors = ff[dot(g,g)]
+                        // if the form factors exist, calculate the potential energy and assign it to the matrix
+                        // otherwise, assign 0 to the matrix
+                        H[row][col] = potential(g: g, tau: offset, sym: symfactors![0], asym: asymfactors![0])
+                    }
+                }
+            }
+        return H
+    }
+    
+    func dot(_ a: [Double], _ b: [Double]) -> Double {
+        return zip(a, b).map(*).reduce(0, +)
+    }
 
 
-
-    
-    
-    
     
 }
 
@@ -123,28 +170,3 @@ struct Complex<T: FloatingPoint>: CustomStringConvertible {
             return Complex<T>(real: real, imaginary: imaginary)
         }
 }
-
-
-
-
-
-
-
-//
-//
-//// Diagonalize the Hamiltonian matrix
-//var eigVals = [Double](repeating: 0.0, count: N)
-//var eigVecs = Matrix(size: (N, N), repeatedValue: 0.0)
-//let info = LAPACKE_dsyevd(LAPACK_COL_MAJOR, "V", "U", N, &H, N, &eigVals)
-//for n in 0..<N {
-//    for m in 0..<N {
-//        eigVecs[n, m] = H[m, n]
-//    }
-//}
-//
-//// Print the energy levels
-//print("Energy levels:")
-//for n in 0..<N {
-//    print("\(n+1) \t \(eigVals[n] / 1.6e-19) eV")
-//}
-//
