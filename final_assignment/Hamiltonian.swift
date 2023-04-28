@@ -128,6 +128,50 @@ class Hamiltonian: NSObject {
     func dot(_ a: [Double], _ b: [Double]) -> Double {
         return zip(a, b).map(*).reduce(0, +)
     }
+    
+//    func diagonalizeHamiltonian(hamiltonianMatrix: [[Complex<Double>]]) -> [Complex<Double>] {
+//        let n = hamiltonianMatrix.count
+//        var matrix_real = [Double](repeating: 0.0, count: n*n)
+//        var matrix_imag = [Double](repeating: 0.0, count: n*n)
+//        var result_real = [Double](repeating: 0.0, count: n*n)
+//        var result_imag = [Double](repeating: 0.0, count: n*n)
+//        var eigenvalues_real = [Double](repeating: 0.0, count: n)
+//        var eigenvalues_imag = [Double](repeating: 0.0, count: n)
+//        var vr = [Double](repeating: 0.0, count: n*n)
+//        var vl = [Double](repeating: 0.0, count: n*n)
+//        for i in 0..<n {
+//            for j in 0..<n {
+//                matrix_real[i*n+j] = hamiltonianMatrix[i][j].real
+//                matrix_imag[i*n+j] = hamiltonianMatrix[i][j].imaginary
+//            }
+//        }
+//        var jobvl: Int8 = 78 // 'N' to compute only right eigenvectors
+//        var jobvr: Int8 = 86 // 'V' to compute both left and right eigenvectors
+//        var n_int = __CLPK_integer(n)
+//        var lda = n_int
+//        var ldvl = n_int
+//        var ldvr = n_int
+//        var lwork = -1
+//        var work_real = [Double](repeating: 0.0, count: 1)
+//        var work_imag = [Double](repeating: 0.0, count: 1)
+//        var rwork = [Double](repeating: 0.0, count: 2*n)
+//        var info: __CLPK_integer = 0
+//        zggev_(&jobvl, &jobvr, &n_int, &matrix_real, &lda, &matrix_imag, &lda, &eigenvalues_real, &eigenvalues_imag, &vl, &ldvl, &vr, &ldvr, &work_real, &lwork, &work_imag, &info)
+//        lwork = Int(work_real[0])
+//        work_real = [Double](repeating: 0.0, count: lwork)
+//        work_imag = [Double](repeating: 0.0, count: lwork)
+//        zggev_(&jobvl, &jobvr, &n_int, &matrix_real, &lda, &matrix_imag, &lda, &eigenvalues_real, &eigenvalues_imag, &vl, &ldvl, &vr, &ldvr, &work_real, &lwork, &work_imag, &info)
+//        var eigenvalues = [Complex<Double>]()
+//        for i in 0..<n {
+//            eigenvalues.append(Complex<Double>(real: eigenvalues_real[i], imaginary: eigenvalues_imag[i]))
+//        }
+//        
+//        return Array(eigenvalues)
+//    }
+
+    
+    
+
 
 
     
