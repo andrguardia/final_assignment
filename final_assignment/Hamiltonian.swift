@@ -9,6 +9,7 @@ import SwiftUI
 import Foundation
 import Accelerate
 
+
 var hbar = 1.0545718e-34 // Planck's constant divided by 2π in J/s
 var m_e = 9.10938356e-31 // mass of the electron in Kg
 var e = 1.602176634e-19 //electron charge in Coulombs
@@ -79,11 +80,11 @@ class Hamiltonian: NSObject {
         return Complex<Double>(real: realPart, imaginary: imagPart) * complexMultiplier
     }
 
-
-    func hamiltonian(latticeConstant: Double, formFactors: [Double: [Double]], reciprocalBasis: [Double], k: [Double], states: Int) -> [[Complex<Double>]] {
+    func hamiltonian(latticeConstant: Double, formFactorsS: [Double: [Double]], formFactorsA: [Double: [Double]], reciprocalBasis: [Double], k: [Double], states: Int) -> [[Complex<Double>]] {
         
         let a = latticeConstant
-        let ff = formFactors
+        let ffS = formFactorsS // Symmetric Form Factors
+        let ffA = formFactorsA //Assymetric Form Factors from Zincblende structure
         let basis = reciprocalBasis
         
         // some constants that don't need to be recalculated
@@ -97,77 +98,98 @@ class Hamiltonian: NSObject {
         let n = pow(Double(states), 3)
         
         // initialize our matrix to arbitrary elements
-        var H = Array(repeating: Array(repeating: Complex<Double>(real: 0.0, imaginary: 0.0), count: Int(N)), count: Int(N))
-
+        var H = Array(repeating: Array(repeating: Complex<Double>(real: 0.0, imaginary: 0.0), count: Int(n)), count: Int(n))
         
         // iterate over each row and column of the matrix
-            for row in 0..<Int(n) {
-                for col in 0..<Int(n) {
-                    
-                    // if row and column index are the same, calculate kinetic energy
-                    if row == col {
-                        // calculate the reciprocal lattice vector for this row
-                        let g = [dot(coefficients(m: row - Int(n / 2), states: states),basis)]
-                        // calculate the kinetic energy and assign it to the matrix
-                        H[row][col] = Complex<Double>(real: kinetic_c * kinetic(k: k, g: g), imaginary: 0)
-                    } else {
-                        // calculate the reciprocal lattice vector for this pair of rows and columns
-                        let g = [dot(coefficients(m: row - col, states: states), basis)]
-                        // get the form factors associated with the magnitude of the reciprocal lattice vector
-                        let symfactors = ff[dot(g,g)]
-                        let asymfactors = ff[dot(g,g)]
-                        // if the form factors exist, calculate the potential energy and assign it to the matrix
-                        // otherwise, assign 0 to the matrix
-                        H[row][col] = potential(g: g, tau: offset, sym: symfactors![0], asym: asymfactors![0])
-                    }
+        for row in 0..<Int(n) {
+            for col in 0..<Int(n) {
+                
+                // if row and column index are the same, calculate kinetic energy
+                if row == col {
+                    // calculate the reciprocal lattice vector for this row
+                    let g = [dot(coefficients(m: row - Int(n / 2), states: states),basis)]
+                    // calculate the kinetic energy and assign it to the matrix
+                    H[row][col] = Complex<Double>(real: kinetic_c * kinetic(k: k, g: g), imaginary: 0)
+                } else {
+                    // calculate the reciprocal lattice vector for this pair of rows and columns
+                    let g = [dot(coefficients(m: row - col, states: states), basis)]
+                    // get the form factors associated with the magnitude of the reciprocal lattice vector
+                    let symfactors = ffS[dot(g,g)]
+                    let asymfactors = ffA[dot(g,g)]
+                    // if the form factors exist, calculate the potential energy and assign it to the matrix
+                    // otherwise, assign 0 to the matrix
+                    H[row][col] = potential(g: g, tau: offset, sym: symfactors![0], asym: asymfactors![0])
                 }
             }
+        }
         return H
     }
+    
     
     func dot(_ a: [Double], _ b: [Double]) -> Double {
         return zip(a, b).map(*).reduce(0, +)
     }
     
-//    func diagonalizeHamiltonian(hamiltonianMatrix: [[Complex<Double>]]) -> [Complex<Double>] {
-//        let n = hamiltonianMatrix.count
-//        var matrix_real = [Double](repeating: 0.0, count: n*n)
-//        var matrix_imag = [Double](repeating: 0.0, count: n*n)
-//        var result_real = [Double](repeating: 0.0, count: n*n)
-//        var result_imag = [Double](repeating: 0.0, count: n*n)
-//        var eigenvalues_real = [Double](repeating: 0.0, count: n)
-//        var eigenvalues_imag = [Double](repeating: 0.0, count: n)
-//        var vr = [Double](repeating: 0.0, count: n*n)
-//        var vl = [Double](repeating: 0.0, count: n*n)
-//        for i in 0..<n {
-//            for j in 0..<n {
-//                matrix_real[i*n+j] = hamiltonianMatrix[i][j].real
-//                matrix_imag[i*n+j] = hamiltonianMatrix[i][j].imaginary
-//            }
+    
+
+
+
+//    func band_structure(lattice_constant: Double, formFactorsS: [Double: [Double]], formFactorsA: [Double: [Double]], reciprocal_basis: [Double], states: Int, path: [[Double]]) -> [[Double]] {
+//        var bands: [[Double]] = []
+//
+//        // vstack concatenates our list of paths into one nice array
+//        for k in path {
+//            let h = hamiltonian(latticeConstant: lattice_constant, formFactorsS: formFactorsS, formFactorsA: formFactorsA, reciprocalBasis: reciprocal_basis, k: k, states: states)
+//
+//            // Diagonalize the Hamiltonian using LAPACK
+//            var n = __CLPK_integer(h.count)
+//            var eigenvalues = [Double](repeating: 0.0, count: Int(n))
+//            var eigenvectors = [Double](repeating: 0.0, count: Int(n)*Int(n))
+//            var work = [Double](repeating: 0.0, count: 4*Int(n))
+//            var info: __CLPK_integer = 0
+//
+//            var hCopy = h.flatMap{ $0 } // Flattens the matrix into a contiguous 1D array
+//
+//            dsyevd_("V", "U", &n, &hCopy, &n, &eigenvalues, &work, &n, &info)
+//
+//            // Extract the lowest 8 eigenvalues
+//            let lowestEigvals = Array(eigenvalues.prefix(8))
+//            bands.append(lowestEigvals)
 //        }
-//        var jobvl: Int8 = 78 // 'N' to compute only right eigenvectors
-//        var jobvr: Int8 = 86 // 'V' to compute both left and right eigenvectors
-//        var n_int = __CLPK_integer(n)
-//        var lda = n_int
-//        var ldvl = n_int
-//        var ldvr = n_int
-//        var lwork = -1
-//        var work_real = [Double](repeating: 0.0, count: 1)
-//        var work_imag = [Double](repeating: 0.0, count: 1)
-//        var rwork = [Double](repeating: 0.0, count: 2*n)
-//        var info: __CLPK_integer = 0
-//        zggev_(&jobvl, &jobvr, &n_int, &matrix_real, &lda, &matrix_imag, &lda, &eigenvalues_real, &eigenvalues_imag, &vl, &ldvl, &vr, &ldvr, &work_real, &lwork, &work_imag, &info)
-//        lwork = Int(work_real[0])
-//        work_real = [Double](repeating: 0.0, count: lwork)
-//        work_imag = [Double](repeating: 0.0, count: lwork)
-//        zggev_(&jobvl, &jobvr, &n_int, &matrix_real, &lda, &matrix_imag, &lda, &eigenvalues_real, &eigenvalues_imag, &vl, &ldvl, &vr, &ldvr, &work_real, &lwork, &work_imag, &info)
-//        var eigenvalues = [Complex<Double>]()
-//        for i in 0..<n {
-//            eigenvalues.append(Complex<Double>(real: eigenvalues_real[i], imaginary: eigenvalues_imag[i]))
-//        }
-//        
-//        return Array(eigenvalues)
+//
+//        return bands
 //    }
+
+    func diagonalize(H: [[Complex<Double>]]) -> (eigenvalues: [Complex<Double>], eigenvectors: [[Complex<Double>]]) {
+            
+            var n = __CLPK_integer(H.count)
+            var lda = n
+            var ldvl = n
+            var ldvr = n
+            var A = H.flatMap { $0.map { ($0.real, $0.imaginary) } }
+            var WR = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n))
+            var WI = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n))
+            var VL = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n*n))
+            var VR = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n*n))
+            var lwork = __CLPK_integer(4*n*n)
+            var work = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(lwork))
+            var rwork = [Double](repeating: 0.0, count: Int(2*n))
+            var info: __CLPK_integer = 0
+            
+            // Diagonalize the matrix
+            zgeev_(UnsafeMutablePointer(mutating: "N"), UnsafeMutablePointer(mutating:"V"), &n, &A, &lda, &WR, &WI, &VL, &ldvl, &VR, &ldvr, &work, &lwork, &rwork, &info)
+            
+            // Extract the eigenvalues and eigenvectors from the result
+            var eigenvalues = zip(WR, WI).map { Complex<Double>(real: $0.real, imaginary: $0.imag) }
+            var eigenvectors = (0..<Int(n)).map { i in
+                (0..<Int(n)).map { j in
+                    Complex<Double>(real: VR[i*Int(n)+j].real, imaginary: VR[i*Int(n)+j].imag)
+                }
+            }
+            
+            return (eigenvalues: eigenvalues, eigenvectors: eigenvectors)
+        }
+
 
     
     
