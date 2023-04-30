@@ -163,21 +163,73 @@ struct ContentView: View {
     
     func calculate(){
         
-        var symmetricFormfactors = [3.0: [selectedStructure.pseudopotentialFormFactor_V3S], 8.0: [selectedStructure.pseudopotentialFormFactor_V8S], 11.0: [selectedStructure.pseudopotentialFormFactor_V11S]]
-        var asymmetricFormFactors = [3.0: [selectedStructure.pseudopotentialFormFactor_V3A], 4.0: [selectedStructure.pseudopotentialFormFactor_V4A], 11.0: [selectedStructure.pseudopotentialFormFactor_V11A]]
+        let symmetricFormfactors = [3.0: [selectedStructure.pseudopotentialFormFactor_V3S], 8.0: [selectedStructure.pseudopotentialFormFactor_V8S], 11.0: [selectedStructure.pseudopotentialFormFactor_V11S]]
+        let asymmetricFormFactors = [3.0: [selectedStructure.pseudopotentialFormFactor_V3A], 4.0: [selectedStructure.pseudopotentialFormFactor_V4A], 11.0: [selectedStructure.pseudopotentialFormFactor_V11A]]
+        
+        //In units of 2*pi/a
+        let reciprocalBasis = [-1.0, 1.0, 1.0,
+                               1.0, -1.0, 1.0,
+                               1.0, 1.0, -1.0]
+        
+        var samplePoints = 100 // Sample Points per k-path
+        
+        //Initialize Symmetry Points in Brillouin zone:
+        
+        let G = [0.0, 0.0, 0.0]
+        let L = [0.5, 0.5, 0.5]
+        let K = [0.75, 0.75, 0.0]
+        let X = [0.0, 0.0, 1.0]
+        let W = [1.0, 0.5, 0.0]
+        let U = [0.25, 0.25, 1.0]
+
+        // We now define the k-paths
+        let lambd = linpath(a: L, b: G, n: samplePoints, endpoint: false)
+        let delta = linpath(a: G, b: X, n: samplePoints, endpoint: false)
+        let x_uk = linpath(a: X, b: U, n: samplePoints/4, endpoint: false)
+        let sigma = linpath(a: K, b: G, n: samplePoints, endpoint: true)
+        
+        //Below we run the actual calculation of the band structure, making use of the high symmetry of the diamond lattice with a path
+        // L → Γ → X → U / K → Γ
+        
+        var myHammy = Hamiltonian() //We define Hamiltonian Object
+        let path = [lambd, delta, x_uk, sigma]
+        
+        var bands = myHammy.bandStructure(latticeConstant: selectedStructure.latticeVariable, formFactorS: symmetricFormfactors, formFactorA: asymmetricFormFactors, reciprocalBasis: reciprocalBasis, states: 5, path: path)
+        
+        print(bands)
         
         
-        
-        var myHammy = Hamiltonian()
-        
-        print(symmetricFormfactors)
-        print(asymmetricFormFactors)
-        print(myHammy)
     }
 
     func clear(){
         print("Clear button works lmao")
     }
+    
+    func linpath(a: [Double], b: [Double], n: Int = 50, endpoint: Bool = true) -> [Double] {
+        // Create an array of n equally spaced points along the path a -> b, inclusive.
+
+        // Get the shortest length of either a or b
+        let k = min(a.count, b.count)
+        
+        // Calculate the step size for each dimension
+        let step = (0..<k).map { (b[$0] - a[$0]) / Double(n - 1) }
+        
+        // Calculate the points along the path
+        var points = (0..<n).map { i in
+            (0..<k).map { j in
+                a[j] + step[j] * Double(i)
+            }
+        }
+        
+        // Add the endpoint if necessary
+        if endpoint && n > 1 {
+            points[n-1] = b
+        }
+        
+        // Flatten the points array and return it
+        return points.flatMap { $0 }
+    }
+
 }
 
 

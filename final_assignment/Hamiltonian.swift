@@ -110,7 +110,7 @@ class Hamiltonian: NSObject {
                     let g = [dot(coefficients(m: row - Int(n / 2), states: states),basis)]
                     // calculate the kinetic energy and assign it to the matrix
                     H[row][col] = Complex<Double>(real: kinetic_c * kinetic(k: k, g: g), imaginary: 0)
-                } else {
+                } else{
                     // calculate the reciprocal lattice vector for this pair of rows and columns
                     let g = [dot(coefficients(m: row - col, states: states), basis)]
                     // get the form factors associated with the magnitude of the reciprocal lattice vector
@@ -118,7 +118,7 @@ class Hamiltonian: NSObject {
                     let asymfactors = ffA[dot(g,g)]
                     // if the form factors exist, calculate the potential energy and assign it to the matrix
                     // otherwise, assign 0 to the matrix
-                    H[row][col] = potential(g: g, tau: offset, sym: symfactors![0], asym: asymfactors![0])
+                    H[row][col] = potential(g: g, tau: offset, sym: symfactors![0], asym: asymfactors![0]) // CURRENTLY HAVING SOME FATAL ERROR HERE UNWRAPPING WHEN ASYMETRIC FORM FACTORS ARE NIL. NEED TO ADD ERROR HANDLING
                 }
             }
         }
@@ -193,6 +193,7 @@ class Hamiltonian: NSObject {
         
         return [Complex<Double>]()
     }
+
 
 
     
