@@ -176,56 +176,19 @@ class Hamiltonian: NSObject {
         
 
 
-//        // Compute eigenvalues with optimal workspace size
-//        lwork = __CLPK_integer(work[0].real)
-//        work = [__CLPK_doublecomplex](repeating: .init(), count: Int(lwork))
-//        zgeev_(&jobvl, &jobvr, &N, &Aflat, &lda, &wr, &wi, &vl, &ldvl, &vr, &ldvr, &work, &lwork, &rwork, &info)
-//
-//        // Convert real and imaginary parts of eigenvalues to Complex<Double>
-//        var eigenvalues = [Complex<Double>]()
-//        for i in 0..<Int(N) {
-//            eigenvalues.append(Complex<Double>(real: wr[i], imaginary: wi[i]))
-//        }
+        // Compute eigenvalues with optimal workspace size
+        lwork = __CLPK_integer(work[0].r)
+        work = [__CLPK_doublecomplex](repeating: .init(), count: Int(lwork))
+        zgeev_(&jobvl, &jobvr, &N, &Aflat, &lda, &w, &vl, &ldvl, &vr, &ldvr, &work, &lwork, &rwork, &info)
+
+        // Convert real and imaginary parts of eigenvalues to Complex<Double>
+        var eigenvalues = [Complex<Double>]()
+        for i in 0..<Int(N) {
+            eigenvalues.append(Complex<Double>(real: w[i].r, imaginary: w[i].i))
+        }
         
         return [Complex<Double>]()
     }
-
-    
-    
-    
-    
-    
-    
-//
-//    func diagonalize(H: [[Complex<Double>]]) -> (eigenvalues: [Complex<Double>], eigenvectors: [[Complex<Double>]]) {
-//
-//            var n = __CLPK_integer(H.count)
-//            var lda = n
-//            var ldvl = n
-//            var ldvr = n
-//            var A = H.flatMap { $0.map { ($0.real, $0.imaginary) } }
-//            var WR = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n))
-//            var WI = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n))
-//            var VL = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n*n))
-//            var VR = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n*n))
-//            var lwork = __CLPK_integer(4*n*n)
-//            var work = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(lwork))
-//            var rwork = [Double](repeating: 0.0, count: Int(2*n))
-//            var info: __CLPK_integer = 0
-//
-//            // Diagonalize the matrix
-//            zgeev_(UnsafeMutablePointer(mutating: "N"), UnsafeMutablePointer(mutating:"V"), &n, &A, &lda, &WR, &WI, &VL, &ldvl, &VR, &ldvr, &work, &lwork, &rwork, &info)
-//
-//            // Extract the eigenvalues and eigenvectors from the result
-//            var eigenvalues = zip(WR, WI).map { Complex<Double>(real: $0.real, imaginary: $0.imag) }
-//            var eigenvectors = (0..<Int(n)).map { i in
-//                (0..<Int(n)).map { j in
-//                    Complex<Double>(real: VR[i*Int(n)+j].real, imaginary: VR[i*Int(n)+j].imag)
-//                }
-//            }
-//
-//            return (eigenvalues: eigenvalues, eigenvectors: eigenvectors)
-//        }
 
 
     
