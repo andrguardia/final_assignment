@@ -20,8 +20,6 @@
 		AB3F0D5129FB1FFF00181856 /* Matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D5029FB1FFF00181856 /* Matrix.swift */; };
 		AB3F0D5229FB1FFF00181856 /* Matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D5029FB1FFF00181856 /* Matrix.swift */; };
 		AB3F0D5329FB1FFF00181856 /* Matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3F0D5029FB1FFF00181856 /* Matrix.swift */; };
-		AB3F0D5729FDADCE00181856 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB3F0D5529FDAD7900181856 /* Accelerate.framework */; };
-		AB3F0D5829FDADCE00181856 /* Accelerate.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AB3F0D5529FDAD7900181856 /* Accelerate.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,20 +38,6 @@
 			remoteInfo = final_assignment;
 		};
 /* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		AB3F0D5929FDADCF00181856 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				AB3F0D5829FDADCE00181856 /* Accelerate.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		AB3F0D1E29EA091400181856 /* final_assignment.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = final_assignment.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -77,7 +61,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AB3F0D5729FDADCE00181856 /* Accelerate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -176,7 +159,6 @@
 				AB3F0D1A29EA091400181856 /* Sources */,
 				AB3F0D1B29EA091400181856 /* Frameworks */,
 				AB3F0D1C29EA091400181856 /* Resources */,
-				AB3F0D5929FDADCF00181856 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);

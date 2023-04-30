@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+
 struct Structure: Hashable {
     let name: String
     let latticeVariable: Double
@@ -155,14 +156,23 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.top, 25)
-            
 
             
         }
     }
     
     func calculate(){
-        print("Plot button works lmao")
+        
+        var symmetricFormfactors = [3.0: [selectedStructure.pseudopotentialFormFactor_V3S], 8.0: [selectedStructure.pseudopotentialFormFactor_V8S], 11.0: [selectedStructure.pseudopotentialFormFactor_V11S]]
+        var asymmetricFormFactors = [3.0: [selectedStructure.pseudopotentialFormFactor_V3A], 4.0: [selectedStructure.pseudopotentialFormFactor_V4A], 11.0: [selectedStructure.pseudopotentialFormFactor_V11A]]
+        
+        
+        
+        var myHammy = Hamiltonian()
+        
+        print(symmetricFormfactors)
+        print(asymmetricFormFactors)
+        print(myHammy)
     }
 
     func clear(){

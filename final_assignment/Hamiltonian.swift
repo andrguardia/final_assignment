@@ -89,7 +89,7 @@ class Hamiltonian: NSObject {
         
         // some constants that don't need to be recalculated
         let kinetic_c = pow(2 * Double.pi / a, 2)
-        var offset: [Double] = [0.125, 0.125, 0.125]
+        let offset: [Double] = [0.125, 0.125, 0.125]
         
         // states determines size of matrix
         // each of the three reciprocal lattice vectors can
@@ -131,71 +131,105 @@ class Hamiltonian: NSObject {
     }
     
     
-
-
-
-//    func band_structure(lattice_constant: Double, formFactorsS: [Double: [Double]], formFactorsA: [Double: [Double]], reciprocal_basis: [Double], states: Int, path: [[Double]]) -> [[Double]] {
-//        var bands: [[Double]] = []
-//
-//        // vstack concatenates our list of paths into one nice array
-//        for k in path {
-//            let h = hamiltonian(latticeConstant: lattice_constant, formFactorsS: formFactorsS, formFactorsA: formFactorsA, reciprocalBasis: reciprocal_basis, k: k, states: states)
-//
-//            // Diagonalize the Hamiltonian using LAPACK
-//            var n = __CLPK_integer(h.count)
-//            var eigenvalues = [Double](repeating: 0.0, count: Int(n))
-//            var eigenvectors = [Double](repeating: 0.0, count: Int(n)*Int(n))
-//            var work = [Double](repeating: 0.0, count: 4*Int(n))
-//            var info: __CLPK_integer = 0
-//
-//            var hCopy = h.flatMap{ $0 } // Flattens the matrix into a contiguous 1D array
-//
-//            dsyevd_("V", "U", &n, &hCopy, &n, &eigenvalues, &work, &n, &info)
-//
-//            // Extract the lowest 8 eigenvalues
-//            let lowestEigvals = Array(eigenvalues.prefix(8))
-//            bands.append(lowestEigvals)
-//        }
-//
-//        return bands
-//    }
-
-    func diagonalize(H: [[Complex<Double>]]) -> (eigenvalues: [Complex<Double>], eigenvectors: [[Complex<Double>]]) {
-            
-            var n = __CLPK_integer(H.count)
-            var lda = n
-            var ldvl = n
-            var ldvr = n
-            var A = H.flatMap { $0.map { ($0.real, $0.imaginary) } }
-            var WR = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n))
-            var WI = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n))
-            var VL = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n*n))
-            var VR = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n*n))
-            var lwork = __CLPK_integer(4*n*n)
-            var work = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(lwork))
-            var rwork = [Double](repeating: 0.0, count: Int(2*n))
-            var info: __CLPK_integer = 0
-            
-            // Diagonalize the matrix
-            zgeev_(UnsafeMutablePointer(mutating: "N"), UnsafeMutablePointer(mutating:"V"), &n, &A, &lda, &WR, &WI, &VL, &ldvl, &VR, &ldvr, &work, &lwork, &rwork, &info)
-            
-            // Extract the eigenvalues and eigenvectors from the result
-            var eigenvalues = zip(WR, WI).map { Complex<Double>(real: $0.real, imaginary: $0.imag) }
-            var eigenvectors = (0..<Int(n)).map { i in
-                (0..<Int(n)).map { j in
-                    Complex<Double>(real: VR[i*Int(n)+j].real, imaginary: VR[i*Int(n)+j].imag)
-                }
-            }
-            
-            return (eigenvalues: eigenvalues, eigenvectors: eigenvectors)
+    
+    
+    func bandStructure(latticeConstant: Double, formFactorS:[Double: [Double]], formFactorA:[Double: [Double]], reciprocalBasis:[Double], states:Int, path:[[Double]])-> [Complex<Double>]{
+      
+        let bands = [Complex<Double>]()
+        
+        for k in path {
+            // loop body here
+            let H = hamiltonian(latticeConstant: latticeConstant, formFactorsS: formFactorS, formFactorsA: formFactorA, reciprocalBasis: reciprocalBasis, k: k, states: states)
+            //Need to find a way to compute eigenvalues for this one
         }
 
+        return bands
+    }
+    
+    
+    func computeEigenvalues(A: [[Complex<Double>]]) -> [Complex<Double>] {
+        var N = Int32(A.count) // number of rows/columns in matrix A
+        
+        // Create complex double array for eigenvalues
+        var w = [__CLPK_doublecomplex](repeating: .init(), count: Int(N))
+        
+        // Create complex double array for matrix A
+        var Aflat = Array(A.joined().map { unsafeBitCast($0, to: __CLPK_doublecomplex.self) })
+        
+        // Use UnsafeMutablePointer to get pointers to arrays for passing to ZGEEV function
+        var jobvl: Int8 = 78 // ASCII code for 'N', indicating that left eigenvectors will not be computed
+        var jobvr: Int8 = 86 // ASCII code for 'V', indicating that right eigenvectors will be computed
+        var lda = N // leading dimension of A
+        var ldvl = N // leading dimension of left eigenvectors (not used)
+        var ldvr = N // leading dimension of right eigenvectors
+        var lwork = __CLPK_integer(-1) // ask ZGEEV to return optimal workspace size
+        var info: __CLPK_integer = 0 // integer flag for error reporting
+        
+        // Compute optimal workspace size
+        var work = [__CLPK_doublecomplex](repeating: .init(), count: Int(lwork))
+        var rwork = [__CLPK_doublereal](repeating: 0.0, count: Int(2*N))
+        var vl = [__CLPK_doublecomplex](repeating: .init(), count: Int(ldvl*N))
+        var vr = [__CLPK_doublecomplex](repeating: .init(), count: Int(ldvr*N))
+        
+        // Call ZGEEV with lwork = -1 to get optimal workspace size
+        zgeev_(&jobvl, &jobvr, &N, &Aflat, &lda, &w, &vl, &ldvl, &vr, &ldvr, &work, &lwork, &rwork, &info)
+        
+
+
+//        // Compute eigenvalues with optimal workspace size
+//        lwork = __CLPK_integer(work[0].real)
+//        work = [__CLPK_doublecomplex](repeating: .init(), count: Int(lwork))
+//        zgeev_(&jobvl, &jobvr, &N, &Aflat, &lda, &wr, &wi, &vl, &ldvl, &vr, &ldvr, &work, &lwork, &rwork, &info)
+//
+//        // Convert real and imaginary parts of eigenvalues to Complex<Double>
+//        var eigenvalues = [Complex<Double>]()
+//        for i in 0..<Int(N) {
+//            eigenvalues.append(Complex<Double>(real: wr[i], imaginary: wi[i]))
+//        }
+        
+        return [Complex<Double>]()
+    }
 
     
     
+    
+    
+    
+    
+//
+//    func diagonalize(H: [[Complex<Double>]]) -> (eigenvalues: [Complex<Double>], eigenvectors: [[Complex<Double>]]) {
+//
+//            var n = __CLPK_integer(H.count)
+//            var lda = n
+//            var ldvl = n
+//            var ldvr = n
+//            var A = H.flatMap { $0.map { ($0.real, $0.imaginary) } }
+//            var WR = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n))
+//            var WI = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n))
+//            var VL = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n*n))
+//            var VR = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(n*n))
+//            var lwork = __CLPK_integer(4*n*n)
+//            var work = [__CLPK_doublecomplex](repeating: __CLPK_doublecomplex(), count: Int(lwork))
+//            var rwork = [Double](repeating: 0.0, count: Int(2*n))
+//            var info: __CLPK_integer = 0
+//
+//            // Diagonalize the matrix
+//            zgeev_(UnsafeMutablePointer(mutating: "N"), UnsafeMutablePointer(mutating:"V"), &n, &A, &lda, &WR, &WI, &VL, &ldvl, &VR, &ldvr, &work, &lwork, &rwork, &info)
+//
+//            // Extract the eigenvalues and eigenvectors from the result
+//            var eigenvalues = zip(WR, WI).map { Complex<Double>(real: $0.real, imaginary: $0.imag) }
+//            var eigenvectors = (0..<Int(n)).map { i in
+//                (0..<Int(n)).map { j in
+//                    Complex<Double>(real: VR[i*Int(n)+j].real, imaginary: VR[i*Int(n)+j].imag)
+//                }
+//            }
+//
+//            return (eigenvalues: eigenvalues, eigenvectors: eigenvectors)
+//        }
 
 
-
+    
+    
     
 }
 
