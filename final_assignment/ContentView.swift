@@ -163,15 +163,15 @@ struct ContentView: View {
     
     func calculate(){
         
-        let symmetricFormfactors = [3.0: [selectedStructure.pseudopotentialFormFactor_V3S], 8.0: [selectedStructure.pseudopotentialFormFactor_V8S], 11.0: [selectedStructure.pseudopotentialFormFactor_V11S]]
-        let asymmetricFormFactors = [3.0: [selectedStructure.pseudopotentialFormFactor_V3A], 4.0: [selectedStructure.pseudopotentialFormFactor_V4A], 11.0: [selectedStructure.pseudopotentialFormFactor_V11A]]
+        let symmetricFormfactors = [Double(3): [selectedStructure.pseudopotentialFormFactor_V3S], Double(8): [selectedStructure.pseudopotentialFormFactor_V8S], Double(11): [selectedStructure.pseudopotentialFormFactor_V11S]]
+        let asymmetricFormFactors = [Double(3): [selectedStructure.pseudopotentialFormFactor_V3A], Double(4): [selectedStructure.pseudopotentialFormFactor_V4A], Double(11): [selectedStructure.pseudopotentialFormFactor_V11A]]
         
         //In units of 2*pi/a
         let reciprocalBasis = [-1.0, 1.0, 1.0,
                                1.0, -1.0, 1.0,
                                1.0, 1.0, -1.0]
         
-        var samplePoints = 100 // Sample Points per k-path
+        let samplePoints = 100 // Sample Points per k-path
         
         //Initialize Symmetry Points in Brillouin zone:
         
@@ -191,12 +191,12 @@ struct ContentView: View {
         //Below we run the actual calculation of the band structure, making use of the high symmetry of the diamond lattice with a path
         // L → Γ → X → U / K → Γ
         
-        var myHammy = Hamiltonian() //We define Hamiltonian Object
+        let myHammy = Hamiltonian() //We define Hamiltonian Object
         let path = [lambd, delta, x_uk, sigma]
         
-        var bands = myHammy.bandStructure(latticeConstant: selectedStructure.latticeVariable, formFactorS: symmetricFormfactors, formFactorA: asymmetricFormFactors, reciprocalBasis: reciprocalBasis, states: 5, path: path)
+        let bands = myHammy.bandStructure(latticeConstant: selectedStructure.latticeVariable, formFactorS: symmetricFormfactors, formFactorA: asymmetricFormFactors, reciprocalBasis: reciprocalBasis, states: 5, path: path)
         
-        print(bands)
+//        print(bands)
         
         
     }

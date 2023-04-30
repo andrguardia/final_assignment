@@ -28,17 +28,19 @@ class Hamiltonian: NSObject {
     
     func coefficients(m: Int, states: Int) -> [Double] {
     //This function calculates the coefficients for the reciprocal lattice vectors
-    //The function takes two integer parameters, m and states, and returns a tuple of three integers. The Swift version uses integer division instead of floor division and the tuple is enclosed in parentheses instead of commas.
+    //The function takes two integer parameters, m and states, and returns a [Double] of three integers. The Swift version uses integer division instead of floor division.
         
-    //The function first calculates the total number of lattice sites, n, by raising the number of states to the power of three and dividing by two. Then, it calculates the sum s of m and n, and computes the indices h, k, and l by using integer division and modulo operations on s and the number of states. Finally, the function returns the tuple (h, k, l) containing the computed indices.
-    // This implementation is Bard on A. Danner (2004)in his implementation of this same problem in Mathematica: http://danner.group/pseudopotential.html
+    //The function first calculates the total number of lattice sites, n, by raising the number of states to the power of three and dividing by two. Then, it calculates the sum s of m and n, and computes the indices h, k, and l by using integer division and modulo operations on s and the number of states. Finally, the function returns the array [h, k, l] containing the computed indices.
+    // This implementation is Based on A. Danner (2004) in his implementation of this same problem in Mathematica: http://danner.group/pseudopotential.html
+        
         let n = (states * states * states) / 2
         let s = m + n
         let floor = states / 2
         let h = Double(s / (states * states) - floor)
         let k = Double((s % (states * states)) / states - floor)
         let l = Double(s % states - floor)
-        return [h, k, l]
+        var coeff = [h, k, l]
+        return coeff
     }
 
     
@@ -65,7 +67,7 @@ class Hamiltonian: NSObject {
     
     // Where VSG and VAG represent the symmetrical and assymetrical value potentials for each crystalline structure. For zincblende structures particularly we have non-zero VAG terms, giving us a complex matrix that needs to be handled carefully in Swift implementation...
     
-    func potential(g: [Double], tau: [Double], sym: Double, asym: Double = 0) -> Complex<Double> {
+    func potential(g: [Double], tau: [Double], sym: Double, asym: Double) -> Complex<Double> {
         
         // create a Complex<Double> instance with imaginary value of 1
         let complexMultiplier: Complex<Double> = .i
@@ -77,7 +79,7 @@ class Hamiltonian: NSObject {
         let imagPart = asym * sin(2 * Double.pi * (g + tau).reduce(0, +))
         
         // multiply the real and imaginary parts with the complexMultiplier and return the resulting complex number
-        return Complex<Double>(real: realPart, imaginary: imagPart) * complexMultiplier
+        return Complex<Double>(real: realPart, imaginary: imagPart)*complexMultiplier
     }
 
     func hamiltonian(latticeConstant: Double, formFactorsS: [Double: [Double]], formFactorsA: [Double: [Double]], reciprocalBasis: [Double], k: [Double], states: Int) -> [[Complex<Double>]] {
@@ -113,12 +115,24 @@ class Hamiltonian: NSObject {
                 } else{
                     // calculate the reciprocal lattice vector for this pair of rows and columns
                     let g = [dot(coefficients(m: row - col, states: states), basis)]
-                    // get the form factors associated with the magnitude of the reciprocal lattice vector
-                    let symfactors = ffS[dot(g,g)]
-                    let asymfactors = ffA[dot(g,g)]
-                    // if the form factors exist, calculate the potential energy and assign it to the matrix
-                    // otherwise, assign 0 to the matrix
-                    H[row][col] = potential(g: g, tau: offset, sym: symfactors![0], asym: asymfactors![0]) // CURRENTLY HAVING SOME FATAL ERROR HERE UNWRAPPING WHEN ASYMETRIC FORM FACTORS ARE NIL. NEED TO ADD ERROR HANDLING
+
+                    var INDEXTEST = dot(g,g)
+
+                    print(INDEXTEST)
+                    print(ffS[dot(g,g)])
+                    print(ffA[dot(g,g)])
+                    print("*****")
+                    
+                    if let symfactors = ffS[dot(g,g)], let asymfactors = ffA[dot(g,g)] {
+                        // both symfactors and asymfactors exist for this key
+                        H[row][col] = potential(g: g, tau: offset, sym: symfactors[0], asym: asymfactors[0])
+                    } else if let symfactors = ffS[dot(g,g)] {
+                        // symfactors exist but asymfactors do not exist for this key
+                        H[row][col] = potential(g: g, tau: offset, sym: symfactors[0], asym: 0.0)
+                    } else {
+                        // both symfactors and asymfactors do not exist for this key
+                        H[row][col] = Complex<Double>(real: 0.0, imaginary: 0.0)
+                    }
                 }
             }
         }
@@ -170,29 +184,36 @@ class Hamiltonian: NSObject {
         var info: __CLPK_integer = 0 // integer flag for error reporting
         
         // Compute optimal workspace size
-        var work = [__CLPK_doublecomplex](repeating: .init(), count: Int(lwork))
+        // Compute optimal workspace size
+        var work = [__CLPK_doublecomplex]()
         var rwork = [__CLPK_doublereal](repeating: 0.0, count: Int(2*N))
         var vl = [__CLPK_doublecomplex](repeating: .init(), count: Int(ldvl*N))
         var vr = [__CLPK_doublecomplex](repeating: .init(), count: Int(ldvr*N))
-        
+
         // Call ZGEEV with lwork = -1 to get optimal workspace size
-        zgeev_(&jobvl, &jobvr, &N, &Aflat, &lda, &w, &vl, &ldvl, &vr, &ldvr, &work, &lwork, &rwork, &info)
-        
+        var query = __CLPK_doublecomplex()
+        zgeev_(&jobvl, &jobvr, &N, &Aflat, &lda, &w, &vl, &ldvl, &vr, &ldvr, &query, &lwork, &rwork, &info)
 
-
-        // Compute eigenvalues with optimal workspace size
-        lwork = __CLPK_integer(work[0].r)
-        work = [__CLPK_doublecomplex](repeating: .init(), count: Int(lwork))
-        zgeev_(&jobvl, &jobvr, &N, &Aflat, &lda, &w, &vl, &ldvl, &vr, &ldvr, &work, &lwork, &rwork, &info)
-
-        // Convert real and imaginary parts of eigenvalues to Complex<Double>
-        var eigenvalues = [Complex<Double>]()
-        for i in 0..<Int(N) {
-            eigenvalues.append(Complex<Double>(real: w[i].r, imaginary: w[i].i))
+        if info == 0 {
+            // Compute eigenvalues with optimal workspace size
+            var lwork = __CLPK_integer(query.r)
+            work = [__CLPK_doublecomplex](repeating: .init(), count: Int(lwork))
+            zgeev_(&jobvl, &jobvr, &N, &Aflat, &lda, &w, &vl, &ldvl, &vr, &ldvr, &work, &lwork, &rwork, &info)
+            
+            // Convert real and imaginary parts of eigenvalues to Complex<Double>
+            var eigenvalues = [Complex<Double>]()
+            for i in 0..<Int(N) {
+                eigenvalues.append(Complex<Double>(real: w[i].r, imaginary: w[i].i))
+            }
+            
+            return eigenvalues
+        } else {
+            print("ZGEEV failed with info = \(info)")
+            return []
         }
-        
-        return [Complex<Double>]()
+
     }
+
 
 
 
