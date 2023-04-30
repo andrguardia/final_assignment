@@ -114,24 +114,24 @@ class Hamiltonian: NSObject {
                     H[row][col] = Complex<Double>(real: kinetic_c * kinetic(k: k, g: g), imaginary: 0)
                 } else{
                     // calculate the reciprocal lattice vector for this pair of rows and columns
-                    let g = [dot(coefficients(m: row - col, states: states), basis)]
-
-                    var INDEXTEST = dot(g,g)
-
-                    print(INDEXTEST)
-                    print(ffS[dot(g,g)])
-                    print(ffA[dot(g,g)])
-                    print("*****")
+                    let g = [dot(coefficients(m: row - col, states: states), basis)] //******Need to re-evaluate how this is being calculated!!!!!!1
                     
-                    if let symfactors = ffS[dot(g,g)], let asymfactors = ffA[dot(g,g)] {
+                    
+                    if let symfactors = ffS[dot(g,g)], let asymfactors = ffA[dot(g,g)]{
                         // both symfactors and asymfactors exist for this key
                         H[row][col] = potential(g: g, tau: offset, sym: symfactors[0], asym: asymfactors[0])
-                    } else if let symfactors = ffS[dot(g,g)] {
+                    }
+                    else if let symfactors = ffS[dot(g,g)]{
                         // symfactors exist but asymfactors do not exist for this key
                         H[row][col] = potential(g: g, tau: offset, sym: symfactors[0], asym: 0.0)
-                    } else {
+                    }
+                    else if let asymfactors = ffA[dot(g,g)]{
+                        // asymfactors exist but symfactors do not exist for this key
+                        H[row][col] = potential(g: g, tau: offset, sym: 0.0, asym: asymfactors[0])
+                    }
+                    else{
                         // both symfactors and asymfactors do not exist for this key
-                        H[row][col] = Complex<Double>(real: 0.0, imaginary: 0.0)
+                        //                        H[row][col] = Complex<Double>(real: 0.0, imaginary: 0.0)
                     }
                 }
             }
@@ -258,4 +258,5 @@ struct Complex<T: FloatingPoint>: CustomStringConvertible {
             let imaginary = lhs.real * rhs.imaginary + lhs.imaginary * rhs.real
             return Complex<T>(real: real, imaginary: imaginary)
         }
+
 }
