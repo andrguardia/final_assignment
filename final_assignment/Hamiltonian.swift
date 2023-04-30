@@ -133,18 +133,22 @@ class Hamiltonian: NSObject {
     
     
     
-    func bandStructure(latticeConstant: Double, formFactorS:[Double: [Double]], formFactorA:[Double: [Double]], reciprocalBasis:[Double], states:Int, path:[[Double]])-> [Complex<Double>]{
-      
-        let bands = [Complex<Double>]()
+    func bandStructure(latticeConstant: Double, formFactorS:[Double: [Double]], formFactorA:[Double: [Double]], reciprocalBasis:[Double], states:Int, path:[[Double]])-> [[Complex<Double>]] {
+          
+            var bands = [[Complex<Double>]]()
+            
+            for k in path {
+                // loop body here
+                let H = hamiltonian(latticeConstant: latticeConstant, formFactorsS: formFactorS, formFactorsA: formFactorA, reciprocalBasis: reciprocalBasis, k: k, states: states)
+                //Need to find a way to compute eigenvalues for this one
+                let eigenVals = computeEigenvalues(A: H)
+                let sortedeigenVals = eigenVals.sorted { $0.real < $1.real }
+                bands.append(Array(sortedeigenVals.prefix(8)))
+            }
         
-        for k in path {
-            // loop body here
-            let H = hamiltonian(latticeConstant: latticeConstant, formFactorsS: formFactorS, formFactorsA: formFactorA, reciprocalBasis: reciprocalBasis, k: k, states: states)
-            //Need to find a way to compute eigenvalues for this one
+            return bands
         }
 
-        return bands
-    }
     
     
     func computeEigenvalues(A: [[Complex<Double>]]) -> [Complex<Double>] {
