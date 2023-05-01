@@ -170,7 +170,7 @@ struct ContentView: View {
         // We now define the k-paths
         let lambd = linpath(a: L, b: G, n: samplePoints, endpoint: false)
         let delta = linpath(a: G, b: X, n: samplePoints, endpoint: false)
-        let x_uk = linpath(a: X, b: U, n: samplePoints, endpoint: false)
+        let x_uk = linpath(a: X, b: U, n: samplePoints/4, endpoint: false)
         let sigma = linpath(a: K, b: G, n: samplePoints, endpoint: true)
         
         //Below we run the actual calculation of the band structure, making use of the high symmetry of the diamond lattice with a path
