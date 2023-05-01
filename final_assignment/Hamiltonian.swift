@@ -39,7 +39,7 @@ class Hamiltonian: NSObject {
         let h = Double(s / (states * states) - floor)
         let k = Double((s % (states * states)) / states - floor)
         let l = Double(s % states - floor)
-        var coeff = [h, k, l]
+        let coeff = [h, k, l]
         return coeff
     }
 
