@@ -157,7 +157,7 @@ class Hamiltonian: NSObject {
                 //Need to find a way to compute eigenvalues for this one
                 let eigenVals = computeEigenvalues(A: H)
                 let sortedeigenVals = eigenVals.sorted { $0.real < $1.real }
-                bands.append(Array(sortedeigenVals.prefix(8)))
+                bands.append(Array(sortedeigenVals.prefix(120)))
             }
         
             return bands

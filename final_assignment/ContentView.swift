@@ -20,27 +20,15 @@ struct Structure: Hashable {
     let pseudopotentialFormFactor_V11A: Double
 }
 
-//struct bandPath: Identifiable {
-//    //The Band data structure is used to plot the different segments in the Brillouin Zone for a particular element
-//    //This data structure has three different fields: pathName, x and y with the following data types Double, [Double] and [Double] respectively.
-//    //This data structure will be used for plotting the different band structures while also color coding each path in the Brillouin Zone
-//    var id = UUID() // Add random id to conform with identifiable protocol so we can plot usin gcharts
-//    var pathName: String //The name of the Brillouin Zone
-//    var x: [Double] //The linspace output for the path of the same name
-//    var y: [Double] //The actual eigenvalues for that path
-//
-//    init(pathName: String, x: [Double], y: [Double]) {
-//            self.pathName = pathName
-//            self.x = x
-//            self.y = y
-//        }
-//
-//}
+
 
 struct ContentView: View {
     @State private var selectedStructure = Structure(name: "None Selected", latticeVariable: 0.00, pseudopotentialFormFactor_V3S:0.00, pseudopotentialFormFactor_V8S: 0.00, pseudopotentialFormFactor_V11S: 0.00, pseudopotentialFormFactor_V3A: 0.00, pseudopotentialFormFactor_V4A:0.00, pseudopotentialFormFactor_V11A: 0.00)
     
-    @State var plotData: [[String: Any]] = []
+    @State var lambda_points: [(xPoint: Double, yPoint: Double)] = []
+    @State var delta_points: [(xPoint: Double, yPoint: Double)] = []
+    @State var x_uk_points: [(xPoint: Double, yPoint: Double)] = []
+    @State var sigma_points: [(xPoint: Double, yPoint: Double)] = []
     
     @State var result = [[Double]]()
     
@@ -148,20 +136,11 @@ struct ContentView: View {
                 .fontWeight(.bold)
                 .padding(.all, 25)
             
-            let eigenvaluesString = result.map { $0.map { String($0) }.joined(separator: ", ") }
-                                           .joined(separator: "\n")
-            Text("Eigenvalues:\n\(eigenvaluesString)")
-                .multilineTextAlignment(.leading)
-                .padding(.leading, 50)
-                .padding(.trailing, 50)
-                .padding(.top, 5)
+            Text("PLOT GOES HERE!!!!!")
+                .font(.title3)
+                .fontWeight(.bold)
+                .padding(.all, 25)
             
-//            Chart(plotData){
-//                LineMark(
-//                    x: .value("k-Path", $0.x),
-//                    y: .value("Energy [eV]", $0.y)
-//                )
-//            }
         }
 
 
@@ -177,7 +156,7 @@ struct ContentView: View {
                                1.0, -1.0, 1.0,
                                1.0, 1.0, -1.0]
         
-        let samplePoints = 100 // Sample Points per k-path
+        let samplePoints = 40 // Sample Points per k-path
         
         //Initialize Symmetry Points in Brillouin zone:
         
@@ -207,30 +186,31 @@ struct ContentView: View {
         
         result = doubleBands
         
-        //We now add the results per path to the plotData dictionary
-        plotData.append(["pathName": "lambd", "x": lambd, "y": result[0]])
-        plotData.append(["pathName": "delta", "x": delta, "y": result[1]])
-        plotData.append(["pathName": "x_uk", "x": x_uk, "y": result[2]])
-        plotData.append(["pathName": "sigma", "x": sigma, "y": result[3]])
         
-        print(result[0].count)
-        print(lambd.count)
-        print(result[1].count)
-        print(delta.count)
-        print(result[2].count)
-        print(x_uk.count)
-        print(result[3].count)
-        print(sigma.count)
-        print("*********")
+        
+        //Now we populate each path's points array
+        for i in 0..<lambd.count {
+            let point = (xPoint: lambd[i], yPoint: result[0][i])
+            lambda_points.append(point)
+        }
+        
+        for i in 0..<delta.count {
+            let point = (xPoint: delta[i], yPoint: result[1][i])
+            delta_points.append(point)
+        }
+        
+        for i in 0..<x_uk.count {
+            let point = (xPoint: x_uk[i], yPoint: result[2][i])
+            x_uk_points.append(point)
+        }
+        for i in 0..<sigma.count {
+            let point = (xPoint: sigma[i], yPoint: result[3][i])
+            sigma_points.append(point)
+        }
 
-
-        
-        
-        
     }
 
     func clear(){
-        print(plotData)
     }
     
     func linpath(a: [Double], b: [Double], n: Int = 50, endpoint: Bool = true) -> [Double] {
