@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Charts
 
 
 struct Structure: Hashable {
@@ -19,9 +20,27 @@ struct Structure: Hashable {
     let pseudopotentialFormFactor_V11A: Double
 }
 
+//struct bandPath: Identifiable {
+//    //The Band data structure is used to plot the different segments in the Brillouin Zone for a particular element
+//    //This data structure has three different fields: pathName, x and y with the following data types Double, [Double] and [Double] respectively.
+//    //This data structure will be used for plotting the different band structures while also color coding each path in the Brillouin Zone
+//    var id = UUID() // Add random id to conform with identifiable protocol so we can plot usin gcharts
+//    var pathName: String //The name of the Brillouin Zone
+//    var x: [Double] //The linspace output for the path of the same name
+//    var y: [Double] //The actual eigenvalues for that path
+//
+//    init(pathName: String, x: [Double], y: [Double]) {
+//            self.pathName = pathName
+//            self.x = x
+//            self.y = y
+//        }
+//
+//}
 
 struct ContentView: View {
     @State private var selectedStructure = Structure(name: "None Selected", latticeVariable: 0.00, pseudopotentialFormFactor_V3S:0.00, pseudopotentialFormFactor_V8S: 0.00, pseudopotentialFormFactor_V11S: 0.00, pseudopotentialFormFactor_V3A: 0.00, pseudopotentialFormFactor_V4A:0.00, pseudopotentialFormFactor_V11A: 0.00)
+    
+    @State var plotData: [[String: Any]] = []
     
     @State var result = [[Double]]()
     
@@ -56,6 +75,9 @@ struct ContentView: View {
         Structure(name: "CdTe", latticeVariable: 6.41, pseudopotentialFormFactor_V3S:-0.20, pseudopotentialFormFactor_V8S: 0.00, pseudopotentialFormFactor_V11S: 0.04, pseudopotentialFormFactor_V3A: 0.15, pseudopotentialFormFactor_V4A:0.09, pseudopotentialFormFactor_V11A: 0.04 ),
     ]
     
+    
+    
+
     var body: some View {
         
         VStack(alignment: .center) {
@@ -133,6 +155,13 @@ struct ContentView: View {
                 .padding(.leading, 50)
                 .padding(.trailing, 50)
                 .padding(.top, 5)
+            
+//            Chart(plotData){
+//                LineMark(
+//                    x: .value("k-Path", $0.x),
+//                    y: .value("Energy [eV]", $0.y)
+//                )
+//            }
         }
 
 
@@ -162,7 +191,7 @@ struct ContentView: View {
         // We now define the k-paths
         let lambd = linpath(a: L, b: G, n: samplePoints, endpoint: false)
         let delta = linpath(a: G, b: X, n: samplePoints, endpoint: false)
-        let x_uk = linpath(a: X, b: U, n: samplePoints/4, endpoint: false)
+        let x_uk = linpath(a: X, b: U, n: samplePoints, endpoint: false)
         let sigma = linpath(a: K, b: G, n: samplePoints, endpoint: true)
         
         //Below we run the actual calculation of the band structure, making use of the high symmetry of the diamond lattice with a path
@@ -177,13 +206,31 @@ struct ContentView: View {
         let doubleBands = bands.map { $0.map { $0.real } }
         
         result = doubleBands
-        print(result)
+        
+        //We now add the results per path to the plotData dictionary
+        plotData.append(["pathName": "lambd", "x": lambd, "y": result[0]])
+        plotData.append(["pathName": "delta", "x": delta, "y": result[1]])
+        plotData.append(["pathName": "x_uk", "x": x_uk, "y": result[2]])
+        plotData.append(["pathName": "sigma", "x": sigma, "y": result[3]])
+        
+        print(result[0].count)
+        print(lambd.count)
+        print(result[1].count)
+        print(delta.count)
+        print(result[2].count)
+        print(x_uk.count)
+        print(result[3].count)
+        print(sigma.count)
+        print("*********")
+
+
+        
         
         
     }
 
     func clear(){
-        print("Clear button works lmao")
+        print(plotData)
     }
     
     func linpath(a: [Double], b: [Double], n: Int = 50, endpoint: Bool = true) -> [Double] {
