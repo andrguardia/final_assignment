@@ -147,9 +147,9 @@ struct ContentView: View {
                             y: .value("Eigenvalue", $0.y)
                         )
                     }.chartYAxis {
-                        AxisMarks(values: .automatic(desiredCount: 10))
+                        AxisMarks(values: .automatic())
                     }.chartXAxis {
-                        AxisMarks(values: .automatic(desiredCount: 10))
+                        AxisMarks(values: .automatic())
                     }
                     Spacer().frame(width: 70)
                 }
@@ -166,16 +166,16 @@ struct ContentView: View {
     
     func calculate(){
         //we multiply all symmetric and assymetric factors by 13.6 to convert from rydbergs to eV
-        let symmetricFormfactors = [3: [13.6059*selectedStructure.pseudopotentialFormFactor_V3S], 8: [13.6059*selectedStructure.pseudopotentialFormFactor_V8S], 11: [13.6059*selectedStructure.pseudopotentialFormFactor_V11S]]
-        let asymmetricFormFactors = [3: [13.6059*selectedStructure.pseudopotentialFormFactor_V3A], 4: [13.6059*selectedStructure.pseudopotentialFormFactor_V4A], 11: [13.6059*selectedStructure.pseudopotentialFormFactor_V11A]]
+//        let symmetricFormfactors = [3: [13.6059*selectedStructure.pseudopotentialFormFactor_V3S], 8: [13.6059*selectedStructure.pseudopotentialFormFactor_V8S], 11: [13.6059*selectedStructure.pseudopotentialFormFactor_V11S]]
+//        let asymmetricFormFactors = [3: [13.6059*selectedStructure.pseudopotentialFormFactor_V3A], 4: [13.6059*selectedStructure.pseudopotentialFormFactor_V4A], 11: [13.6059*selectedStructure.pseudopotentialFormFactor_V11A]]
         
         //LETS DEFINE SYMMETRIC AND ASYMMETRIC FACTORS SEPARATELY
-        var ffS_3 = 13.6059*selectedStructure.pseudopotentialFormFactor_V3S
-        var ffS_8 = 13.6059*selectedStructure.pseudopotentialFormFactor_V8S
-        var ffS_11 = 13.6059*selectedStructure.pseudopotentialFormFactor_V11S
-        var ffA_3 = 13.6059*selectedStructure.pseudopotentialFormFactor_V3A
-        var ffA_4 = 13.6059*selectedStructure.pseudopotentialFormFactor_V4A
-        var ffA_11 = 13.6059*selectedStructure.pseudopotentialFormFactor_V11A
+        let ffS_3 = 13.6059*selectedStructure.pseudopotentialFormFactor_V3S
+        let ffS_8 = 13.6059*selectedStructure.pseudopotentialFormFactor_V8S
+        let ffS_11 = 13.6059*selectedStructure.pseudopotentialFormFactor_V11S
+        let ffA_3 = 13.6059*selectedStructure.pseudopotentialFormFactor_V3A
+        let ffA_4 = 13.6059*selectedStructure.pseudopotentialFormFactor_V4A
+        let ffA_11 = 13.6059*selectedStructure.pseudopotentialFormFactor_V11A
         
         //In units of 2*pi/a
         let reciprocalBasis = [2*Double.pi/selectedStructure.latticeVariable, -2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable,
@@ -189,7 +189,7 @@ struct ContentView: View {
         let G = [0.0, 0.0, 0.0]
         let X = [0.0, 0.5, 0.5]
         let L = [0.5, 0.5, 0.5]
-        let U = [0.25, 0.625, 0.625]
+        //let U = [0.25, 0.625, 0.625]
         let K = [0.375, 0.75, 0.375]
         
 
@@ -224,7 +224,7 @@ struct ContentView: View {
         let k = min(a.count, b.count)
 
         // Calculate the step size for each dimension
-        let step = (0..<k).map { (b[$0] - a[$0]) / Double(n) }
+        let step = (0..<k).map { (b[$0] - a[$0]) / Double(n-1) }
 
         // Calculate the points along the path
         var points = [Double]()

@@ -148,29 +148,9 @@ class Hamiltonian: NSObject {
                     else{
                         H[row][col] = Complex<Double>(real: 0.0, imaginary: 0.0)
                     }
-                    
-
-//                    if let symfactors = ffS[Int(dot(g,g))], let asymfactors = ffA[Int(dot(g,g))]{
-//                        // both symfactors and asymfactors exist for this key
-//                        H[row][col] = potential(g: g, tau: offset, sym: symfactors[0], asym: asymfactors[0])
-//                    }
-//                    else if let symfactors = ffS[Int(dot(g,g))]{
-//                        // symfactors exist but asymfactors do not exist for this key
-//                        H[row][col] = potential(g: g, tau: offset, sym: symfactors[0], asym: 0.0)
-//                    }
-//                    else if let asymfactors = ffA[Int(dot(g,g))]{
-//                        // asymfactors exist but symfactors do not exist for this key
-//                        H[row][col] = potential(g: g, tau: offset, sym: 0.0, asym: asymfactors[0])
-//                    }
-//                    else{
-//                        //both symfactors and asymfactors do not exist for this key
-//                        H[row][col] = Complex<Double>(real: 0.0, imaginary: 0.0)
-//                    }
                 }
             }
         }
-        
-        print(H)
         return H
     }
     
@@ -194,14 +174,12 @@ class Hamiltonian: NSObject {
             // Compute the eigenvalues of the Hamiltonian
             let eigenVals = computeEigenvalues(A: H)
             
-            // Sort the eigenvalues array from minimum to maximum
-            let sortedEigenVals = eigenVals.sorted { $0.real < $1.real }
             
-            // Choose the smallest 8 eigenvalues
-            let smallestEigenVals = Array(sortedEigenVals).prefix(8)
+            let filteredEigenVals = eigenVals.filter { $0.real >= -10 && $0.real <= 10 }
+            
             
             // Loop over each eigenvalue and add it to the bands array along with its corresponding k-point
-            for eig in smallestEigenVals {
+            for eig in filteredEigenVals {
                 data.append(CGPoint(x:k, y:eig.real))
             }
         }
