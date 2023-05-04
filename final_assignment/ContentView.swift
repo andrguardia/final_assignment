@@ -166,40 +166,48 @@ struct ContentView: View {
     
     func calculate(){
         //we multiply all symmetric and assymetric factors by 13.6 to convert from rydbergs to eV
-        let symmetricFormfactors = [Double(3): [13.6059*selectedStructure.pseudopotentialFormFactor_V3S], Double(8): [13.6059*selectedStructure.pseudopotentialFormFactor_V8S], Double(11): [13.6059*selectedStructure.pseudopotentialFormFactor_V11S]]
-        let asymmetricFormFactors = [Double(3): [13.6059*selectedStructure.pseudopotentialFormFactor_V3A], Double(4): [13.6059*selectedStructure.pseudopotentialFormFactor_V4A], Double(11): [13.6059*selectedStructure.pseudopotentialFormFactor_V11A]]
+        let symmetricFormfactors = [3: [13.6059*selectedStructure.pseudopotentialFormFactor_V3S], 8: [13.6059*selectedStructure.pseudopotentialFormFactor_V8S], 11: [13.6059*selectedStructure.pseudopotentialFormFactor_V11S]]
+        let asymmetricFormFactors = [3: [13.6059*selectedStructure.pseudopotentialFormFactor_V3A], 4: [13.6059*selectedStructure.pseudopotentialFormFactor_V4A], 11: [13.6059*selectedStructure.pseudopotentialFormFactor_V11A]]
+        
+        //LETS DEFINE SYMMETRIC AND ASYMMETRIC FACTORS SEPARATELY
+        var ffS_3 = 13.6059*selectedStructure.pseudopotentialFormFactor_V3S
+        var ffS_8 = 13.6059*selectedStructure.pseudopotentialFormFactor_V8S
+        var ffS_11 = 13.6059*selectedStructure.pseudopotentialFormFactor_V11S
+        var ffA_3 = 13.6059*selectedStructure.pseudopotentialFormFactor_V3A
+        var ffA_4 = 13.6059*selectedStructure.pseudopotentialFormFactor_V4A
+        var ffA_11 = 13.6059*selectedStructure.pseudopotentialFormFactor_V11A
         
         //In units of 2*pi/a
         let reciprocalBasis = [2*Double.pi/selectedStructure.latticeVariable, -2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable,
                                2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable, -2*Double.pi/selectedStructure.latticeVariable,
                                -2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable] //2*Double.pi/selectedStructure.latticeVariable  ADD THIS
         
-        let samplePoints = 1 // Sample Points per k-path
+        let samplePoints = 50 // Sample Points per k-path
         
         //Initialize Symmetry Points in Brillouin zone:
         
         let G = [0.0, 0.0, 0.0]
+        let X = [0.0, 0.5, 0.5]
         let L = [0.5, 0.5, 0.5]
-        let K = [0.75, 0.75, 0.0]
-        let X = [0.0, 0.0, 1.0]
-        //let W = [1.0, 0.5, 0.0]
-        let U = [0.25, 0.25, 1.0]
+        let U = [0.25, 0.625, 0.625]
+        let K = [0.375, 0.75, 0.375]
+        
 
         // We now define the k-paths
-//        let lambd = linpath(a: L, b: G, n: samplePoints, endpoint: false)
-//        let delta = linpath(a: G, b: X, n: samplePoints, endpoint: false)
-//        let x_uk = linpath(a: X, b: U, n: samplePoints/4, endpoint: false)
-//        let sigma = linpath(a: K, b: G, n: samplePoints, endpoint: true)
+        let lambd = linpath(a: L, b: G, n: samplePoints, endpoint: false)
+        let delta = linpath(a: G, b: X, n: samplePoints, endpoint: false)
+        let x_uk = linpath(a: X, b: K, n: samplePoints, endpoint: false)
+        let sigma = linpath(a: K, b: G, n: samplePoints, endpoint: true)
         
-        let lambda = linpath(a: G, b: G, n: samplePoints, endpoint: true)
+        //let lambda = linpath(a: G, b: G, n: samplePoints, endpoint: true)
 
         //Below we run the actual calculation of the band structure, making use of the high symmetry of the diamond lattice with a path
         // L → Γ → X → U / K → Γ
 
         let myHammy = Hamiltonian() //We define Hamiltonian Object
-        let path = lambda //+ delta + x_uk + sigma // Merge all paths into one array
+        let path = lambd + delta + x_uk + sigma // Merge all paths into one array
         
-        let bands = myHammy.bandStructure(latticeConstant: selectedStructure.latticeVariable, formFactorS: symmetricFormfactors, formFactorA: asymmetricFormFactors, reciprocalBasis: reciprocalBasis, states: 5, path: path)
+        let bands = myHammy.bandStructure(latticeConstant: selectedStructure.latticeVariable, ffS_3: ffS_3, ffS_8:ffS_8, ffS_11:ffS_11, ffA_3:ffA_3, ffA_4:ffA_4, ffA_11:ffA_11, reciprocalBasis: reciprocalBasis, states: 5, path: path)
     
         result = bands//.sorted(by: { $0.x < $1.x })
         

@@ -28,18 +28,34 @@ class Hamiltonian: NSObject {
     // Where b_n is our reciprocal lattice basis and h,k, and l are a set of integers centered around zero.
     
         
-    func coefficients(m: Int, states: Int) -> [Double] {
+    func coefficients(m: Int, states: Int, latticeConstant: Double) -> [Double] {
         //This function calculates the coefficients for the reciprocal lattice vectors
         //The function takes two integer parameters, m and states, and returns a [Double] of three integers.
             
         //The function first calculates the total number of lattice sites, n, by raising the number of states to the power of three and dividing by two. Then, it calculates the sum s of m and n, and computes the indices h, k, and l by using integer division and modulo operations on s and the number of states. Finally, the function returns the array [h, k, l] containing the computed indices.
-        var coeffs = [Double](repeating: 0, count: states)
-        if m + (states / 2) >= 0 && m + (states / 2) < states {
-            coeffs[m + (states / 2)] = 1
-        }
-        return coeffs
+        var coeff = [Double]()
+        let n = (states * states * states) / 2
+        let s = m + n
+        let floor = states / 2
+        
+        let h = Double(s / (states * states) - floor)
+        let k = Double((s % (states * states)) / states - floor)
+        let l = Double(s % states - floor)
+        
+        let pi = Double.pi
+        let a = latticeConstant * Double(states)
+        let b = 2 * pi / a
+            
+        let hRecip = Double(h) * b
+        let kRecip = Double(k) * b
+        let lRecip = Double(l) * b
+        
+        coeff.append(hRecip)
+        coeff.append(kRecip)
+        coeff.append(lRecip)
+        
+        return coeff
     }
-
 
 
     
@@ -81,11 +97,9 @@ class Hamiltonian: NSObject {
         return Complex<Double>(real: realPart, imaginary: imagPart)*complexMultiplier
     }
 
-    func hamiltonian(latticeConstant: Double, formFactorsS: [Double: [Double]], formFactorsA: [Double: [Double]], reciprocalBasis: [Double], k: [Double], states: Int) -> [[Complex<Double>]] {
+    func hamiltonian(latticeConstant: Double, ffS_3: Double, ffS_8:Double, ffS_11:Double, ffA_3:Double, ffA_4:Double, ffA_11:Double, reciprocalBasis: [Double], k: [Double], states: Int) -> [[Complex<Double>]] {
         
         let a = latticeConstant
-        let ffS = formFactorsS // Symmetric Form Factors
-        let ffA = formFactorsA //Assymetric Form Factors from Zincblende structure
         let basis = reciprocalBasis
         
         // some constants that don't need to be recalculated
@@ -108,42 +122,55 @@ class Hamiltonian: NSObject {
                 // if row and column index are the same, calculate kinetic energy
                 if row == col {
                     // calculate the reciprocal lattice vector for this row
-                    let coeffs = coefficients(m: row - Int(n/2), states: N)
+                    let coeffs = coefficients(m: row - Int(n/2), states: N, latticeConstant: latticeConstant)
                     let g = [dot(coeffs, basis)] //FIX THE COMPUTATION OF THE G VECTOR
-
                     // calculate the kinetic energy and assign it to the matrix
                     H[row][col] = Complex<Double>(real: kinetic_c * kinetic(k: k, g: g), imaginary: 0.0)
                 } else{
                     // calculate the reciprocal lattice vector for this pair of rows and columns
     
-                    let coeffs = coefficients(m: row - col, states: N)
-                    print(coeffs)
-                    
+                    let coeffs = coefficients(m: row - col, states: N, latticeConstant: latticeConstant)
+
                     let g = [dot(coeffs, basis)]
-//                    print(g)
-                    let dotproduct = dot(g,g)
-                    let Test = ffS[dotproduct]
-//                    print(dotproduct)
-//                    print(Test)
-                    if let symfactors = ffS[dot(g,g)], let asymfactors = ffA[dot(g,g)]{
-                        // both symfactors and asymfactors exist for this key
-                        H[row][col] = potential(g: g, tau: offset, sym: symfactors[0], asym: asymfactors[0])
+                    
+                    if Int(dot(g,g))==3{
+                        H[row][col] = potential(g: g, tau: offset, sym: ffS_3, asym: ffA_3)
                     }
-                    else if let symfactors = ffS[dot(g,g)]{
-                        // symfactors exist but asymfactors do not exist for this key
-                        H[row][col] = potential(g: g, tau: offset, sym: symfactors[0], asym: 0.0)
+                    else if Int(dot(g,g))==8{
+                        H[row][col] = potential(g: g, tau: offset, sym: ffS_8, asym: 0.0)
                     }
-                    else if let asymfactors = ffA[dot(g,g)]{
-                        // asymfactors exist but symfactors do not exist for this key
-                        H[row][col] = potential(g: g, tau: offset, sym: 0.0, asym: asymfactors[0])
+                    else if Int(dot(g,g))==11{
+                        H[row][col] = potential(g: g, tau: offset, sym: ffS_11, asym: ffA_11)
+                    }
+                    else if Int(dot(g,g))==4{
+                        H[row][col] = potential(g: g, tau: offset, sym: 0.0, asym: ffA_4)
                     }
                     else{
-                        //both symfactors and asymfactors do not exist for this key
                         H[row][col] = Complex<Double>(real: 0.0, imaginary: 0.0)
                     }
+                    
+
+//                    if let symfactors = ffS[Int(dot(g,g))], let asymfactors = ffA[Int(dot(g,g))]{
+//                        // both symfactors and asymfactors exist for this key
+//                        H[row][col] = potential(g: g, tau: offset, sym: symfactors[0], asym: asymfactors[0])
+//                    }
+//                    else if let symfactors = ffS[Int(dot(g,g))]{
+//                        // symfactors exist but asymfactors do not exist for this key
+//                        H[row][col] = potential(g: g, tau: offset, sym: symfactors[0], asym: 0.0)
+//                    }
+//                    else if let asymfactors = ffA[Int(dot(g,g))]{
+//                        // asymfactors exist but symfactors do not exist for this key
+//                        H[row][col] = potential(g: g, tau: offset, sym: 0.0, asym: asymfactors[0])
+//                    }
+//                    else{
+//                        //both symfactors and asymfactors do not exist for this key
+//                        H[row][col] = Complex<Double>(real: 0.0, imaginary: 0.0)
+//                    }
                 }
             }
         }
+        
+        print(H)
         return H
     }
     
@@ -156,14 +183,14 @@ class Hamiltonian: NSObject {
     
 
     
-    func bandStructure(latticeConstant: Double, formFactorS: [Double: [Double]], formFactorA: [Double: [Double]], reciprocalBasis: [Double], states: Int, path: [Double]) -> [CGPoint] {
+    func bandStructure(latticeConstant: Double, ffS_3: Double, ffS_8:Double, ffS_11:Double, ffA_3:Double, ffA_4:Double, ffA_11:Double, reciprocalBasis: [Double], states: Int, path: [Double]) -> [CGPoint] {
         // Initialize empty array of tuples to store (k, eigenvalue) pairs
         var data = [CGPoint]()
         
         // Loop over each k-point in the path
         for k in path {
             // Compute the Hamiltonian for this k-point
-            let H = hamiltonian(latticeConstant: latticeConstant, formFactorsS: formFactorS, formFactorsA: formFactorA, reciprocalBasis: reciprocalBasis, k: [k], states: states)
+            let H = hamiltonian(latticeConstant: latticeConstant, ffS_3: ffS_3, ffS_8:ffS_8, ffS_11:ffS_11, ffA_3:ffA_3, ffA_4:ffA_4, ffA_11:ffA_11, reciprocalBasis: reciprocalBasis, k: [k], states: states)
             // Compute the eigenvalues of the Hamiltonian
             let eigenVals = computeEigenvalues(A: H)
             
@@ -171,7 +198,7 @@ class Hamiltonian: NSObject {
             let sortedEigenVals = eigenVals.sorted { $0.real < $1.real }
             
             // Choose the smallest 8 eigenvalues
-            let smallestEigenVals = Array(sortedEigenVals)//.prefix(10)
+            let smallestEigenVals = Array(sortedEigenVals).prefix(8)
             
             // Loop over each eigenvalue and add it to the bands array along with its corresponding k-point
             for eig in smallestEigenVals {
@@ -182,10 +209,6 @@ class Hamiltonian: NSObject {
         // Return the array of (k, eigenvalue) pairs
         return data
     }
-
-
-
-
     
     
     func computeEigenvalues(A: [[Complex<Double>]]) -> [Complex<Double>] {
