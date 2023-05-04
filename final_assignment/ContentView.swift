@@ -25,12 +25,7 @@ struct Structure: Hashable {
 struct ContentView: View {
     @State private var selectedStructure = Structure(name: "None Selected", latticeVariable: 0.00, pseudopotentialFormFactor_V3S:0.00, pseudopotentialFormFactor_V8S: 0.00, pseudopotentialFormFactor_V11S: 0.00, pseudopotentialFormFactor_V3A: 0.00, pseudopotentialFormFactor_V4A:0.00, pseudopotentialFormFactor_V11A: 0.00)
     
-    @State var lambda_points: [(xPoint: Double, yPoint: Double)] = []
-    @State var delta_points: [(xPoint: Double, yPoint: Double)] = []
-    @State var x_uk_points: [(xPoint: Double, yPoint: Double)] = []
-    @State var sigma_points: [(xPoint: Double, yPoint: Double)] = []
-    
-    @State var result = [[Double]]()
+    @State var result = [CGPoint]()
     
     let structures = [
         
@@ -136,10 +131,33 @@ struct ContentView: View {
                 .fontWeight(.bold)
                 .padding(.all, 25)
             
-            Text("PLOT GOES HERE!!!!!")
-                .font(.title3)
-                .fontWeight(.bold)
-                .padding(.all, 25)
+            VStack {
+                Text("Band Structure: \(selectedStructure.name)")
+                    .font(.title)
+                    .padding(.top, 20)
+                
+                HStack{
+                    Text("Energy [eV]")
+                        .font(.title3)
+                        .rotationEffect(Angle(degrees: -90))
+                    
+                    Chart(result) {
+                        PointMark(
+                            x: .value("k-Point", $0.x),
+                            y: .value("Eigenvalue", $0.y)
+                        )
+                    }.chartYAxis {
+                        AxisMarks(values: .automatic(desiredCount: 10))
+                    }.chartXAxis {
+                        AxisMarks(values: .automatic(desiredCount: 10))
+                    }
+                    Spacer().frame(width: 70)
+                }
+                Text("k-Points")
+                    .font(.title3)
+                Spacer().frame(height:25)
+                
+            }
             
         }
 
@@ -147,16 +165,16 @@ struct ContentView: View {
     }
     
     func calculate(){
-        
-        let symmetricFormfactors = [Double(3): [selectedStructure.pseudopotentialFormFactor_V3S], Double(8): [selectedStructure.pseudopotentialFormFactor_V8S], Double(11): [selectedStructure.pseudopotentialFormFactor_V11S]]
-        let asymmetricFormFactors = [Double(3): [selectedStructure.pseudopotentialFormFactor_V3A], Double(4): [selectedStructure.pseudopotentialFormFactor_V4A], Double(11): [selectedStructure.pseudopotentialFormFactor_V11A]]
+        //we multiply all symmetric and assymetric factors by 13.6 to convert from rydbergs to eV
+        let symmetricFormfactors = [Double(3): [13.6059*selectedStructure.pseudopotentialFormFactor_V3S], Double(8): [13.6059*selectedStructure.pseudopotentialFormFactor_V8S], Double(11): [13.6059*selectedStructure.pseudopotentialFormFactor_V11S]]
+        let asymmetricFormFactors = [Double(3): [13.6059*selectedStructure.pseudopotentialFormFactor_V3A], Double(4): [13.6059*selectedStructure.pseudopotentialFormFactor_V4A], Double(11): [13.6059*selectedStructure.pseudopotentialFormFactor_V11A]]
         
         //In units of 2*pi/a
         let reciprocalBasis = [-1.0, 1.0, 1.0,
                                1.0, -1.0, 1.0,
                                1.0, 1.0, -1.0]
         
-        let samplePoints = 40 // Sample Points per k-path
+        let samplePoints = 100 // Sample Points per k-path
         
         //Initialize Symmetry Points in Brillouin zone:
         
@@ -164,7 +182,7 @@ struct ContentView: View {
         let L = [0.5, 0.5, 0.5]
         let K = [0.75, 0.75, 0.0]
         let X = [0.0, 0.0, 1.0]
-        let W = [1.0, 0.5, 0.0]
+        //let W = [1.0, 0.5, 0.0]
         let U = [0.25, 0.25, 1.0]
 
         // We now define the k-paths
@@ -172,41 +190,18 @@ struct ContentView: View {
         let delta = linpath(a: G, b: X, n: samplePoints, endpoint: false)
         let x_uk = linpath(a: X, b: U, n: samplePoints/4, endpoint: false)
         let sigma = linpath(a: K, b: G, n: samplePoints, endpoint: true)
-        
+
         //Below we run the actual calculation of the band structure, making use of the high symmetry of the diamond lattice with a path
         // L → Γ → X → U / K → Γ
-        
+
         let myHammy = Hamiltonian() //We define Hamiltonian Object
-        let path = [lambd, delta, x_uk, sigma]
+        let path = lambd + delta + x_uk + sigma // Merge all paths into one array
         
         let bands = myHammy.bandStructure(latticeConstant: selectedStructure.latticeVariable, formFactorS: symmetricFormfactors, formFactorA: asymmetricFormFactors, reciprocalBasis: reciprocalBasis, states: 5, path: path)
     
+        result = bands//.sorted(by: { $0.x < $1.x })
         
-        let doubleBands = bands.map { $0.map { $0.real } }
-        
-        result = doubleBands
-        
-        
-        
-        //Now we populate each path's points array
-        for i in 0..<lambd.count {
-            let point = (xPoint: lambd[i], yPoint: result[0][i])
-            lambda_points.append(point)
-        }
-        
-        for i in 0..<delta.count {
-            let point = (xPoint: delta[i], yPoint: result[1][i])
-            delta_points.append(point)
-        }
-        
-        for i in 0..<x_uk.count {
-            let point = (xPoint: x_uk[i], yPoint: result[2][i])
-            x_uk_points.append(point)
-        }
-        for i in 0..<sigma.count {
-            let point = (xPoint: sigma[i], yPoint: result[3][i])
-            sigma_points.append(point)
-        }
+        print(result)
 
     }
 
@@ -239,6 +234,19 @@ struct ContentView: View {
     }
 
 }
+
+func removeDuplicates(from points: [CGPoint]) -> [CGPoint] {
+    var uniquePoints = [CGPoint]()
+    for point in points {
+        if let index = uniquePoints.firstIndex(where: { $0.x == point.x }) {
+            uniquePoints[index] = point
+        } else {
+            uniquePoints.append(point)
+        }
+    }
+    return uniquePoints
+}
+
 
 
 

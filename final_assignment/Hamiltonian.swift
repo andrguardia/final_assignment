@@ -10,38 +10,37 @@ import Foundation
 import Accelerate
 
 
-var hbar = 1.0545718e-34 // Planck's constant divided by 2π in J/s
-var m_e = 9.10938356e-31 // mass of the electron in Kg
+var hbar = 6.582119569e-16 // Planck's reduced constant in ev*S
+var m_e = 8.187e-14 // mass of the electron in ev/c^2
 var e = 1.602176634e-19 //electron charge in Coulombs
+
 
 
 class Hamiltonian: NSObject {
     // Define constants
-    var KINETIC_CONSTANT = pow(hbar, 2) / (2 * m_e * e) // Constant that multiplies the kinetic term in the Hamiltonian Matrix
+    var KINETIC_CONSTANT = pow(hbar, 2) / (2 * m_e * e) // Constant that multiplies the kinetic term in the Hamiltonian Matrix of units units of eV * meter^2 / Coulombs^2.
     var N = 5.0 // Total number of states to be modeled
+    
     
     //we start by calculating the reciprocal lattice basis vectors
     //These vectors are given by Our Hamiltonian matrix's size is given by the number of reciprocal lattice vectors (G → and G′→):
     //G = hb_1 + kb_2+lb_3
     // Where b_n is our reciprocal lattice basis and h,k, and l are a set of integers centered around zero.
     
-    
+        
     func coefficients(m: Int, states: Int) -> [Double] {
-    //This function calculates the coefficients for the reciprocal lattice vectors
-    //The function takes two integer parameters, m and states, and returns a [Double] of three integers. The Swift version uses integer division instead of floor division.
-        
-    //The function first calculates the total number of lattice sites, n, by raising the number of states to the power of three and dividing by two. Then, it calculates the sum s of m and n, and computes the indices h, k, and l by using integer division and modulo operations on s and the number of states. Finally, the function returns the array [h, k, l] containing the computed indices.
-    // This implementation is Based on A. Danner (2004) in his implementation of this same problem in Mathematica: http://danner.group/pseudopotential.html
-        
-        let n = (states * states * states) / 2
-        let s = m + n
-        let floor = states / 2
-        let h = Double(s / (states * states) - floor)
-        let k = Double((s % (states * states)) / states - floor)
-        let l = Double(s % states - floor)
-        let coeff = [h, k, l]
-        return coeff
+        //This function calculates the coefficients for the reciprocal lattice vectors
+        //The function takes two integer parameters, m and states, and returns a [Double] of three integers. The Swift version uses integer division instead of floor division.
+            
+        //The function first calculates the total number of lattice sites, n, by raising the number of states to the power of three and dividing by two. Then, it calculates the sum s of m and n, and computes the indices h, k, and l by using integer division and modulo operations on s and the number of states. Finally, the function returns the array [h, k, l] containing the computed indices.
+        var coeffs = [Double](repeating: 0, count: states)
+        if m + (states / 2) >= 0 && m + (states / 2) < states {
+            coeffs[m + (states / 2)] = 1
+        }
+        return coeffs
     }
+
+
 
     
     //We proceed to calculate the kinetic term of the Hamiltonian.
@@ -109,12 +108,16 @@ class Hamiltonian: NSObject {
                 // if row and column index are the same, calculate kinetic energy
                 if row == col {
                     // calculate the reciprocal lattice vector for this row
-                    let g = [dot(coefficients(m: row - Int(n / 2), states: states),basis)]
+                    let coeffs = coefficients(m: row - Int(n/2), states: Int(n))
+                    let g = [dot(coeffs, basis)]
+
                     // calculate the kinetic energy and assign it to the matrix
-                    H[row][col] = Complex<Double>(real: kinetic_c * kinetic(k: k, g: g), imaginary: 0)
+                    H[row][col] = Complex<Double>(real: kinetic_c * kinetic(k: k, g: g), imaginary: 0.0)
                 } else{
                     // calculate the reciprocal lattice vector for this pair of rows and columns
-                    let g = [dot(coefficients(m: row - col, states: states), basis)] //******Need to re-evaluate how this is being calculated!!!!!!1
+    
+                    let coeffs = coefficients(m: row - col, states: Int(n))
+                    let g = [dot(coeffs, basis)]
                     
                     
                     if let symfactors = ffS[dot(g,g)], let asymfactors = ffA[dot(g,g)]{
@@ -130,8 +133,8 @@ class Hamiltonian: NSObject {
                         H[row][col] = potential(g: g, tau: offset, sym: 0.0, asym: asymfactors[0])
                     }
                     else{
-                        // both symfactors and asymfactors do not exist for this key
-                        //                        H[row][col] = Complex<Double>(real: 0.0, imaginary: 0.0)
+                        //both symfactors and asymfactors do not exist for this key
+                        H[row][col] = Complex<Double>(real: 0.0, imaginary: 0.0)
                     }
                 }
             }
@@ -146,22 +149,38 @@ class Hamiltonian: NSObject {
     
     
     
+
     
-    func bandStructure(latticeConstant: Double, formFactorS:[Double: [Double]], formFactorA:[Double: [Double]], reciprocalBasis:[Double], states:Int, path:[[Double]])-> [[Complex<Double>]] {
-          
-            var bands = [[Complex<Double>]]()
-            
-            for k in path {
-                // loop body here
-                let H = hamiltonian(latticeConstant: latticeConstant, formFactorsS: formFactorS, formFactorsA: formFactorA, reciprocalBasis: reciprocalBasis, k: k, states: states)
-                //Need to find a way to compute eigenvalues for this one
-                let eigenVals = computeEigenvalues(A: H)
-                let sortedeigenVals = eigenVals.sorted { $0.real < $1.real }
-                bands.append(Array(sortedeigenVals.prefix(120)))
-            }
+    func bandStructure(latticeConstant: Double, formFactorS: [Double: [Double]], formFactorA: [Double: [Double]], reciprocalBasis: [Double], states: Int, path: [Double]) -> [CGPoint] {
+        // Initialize empty array of tuples to store (k, eigenvalue) pairs
+        var data = [CGPoint]()
         
-            return bands
+        // Loop over each k-point in the path
+        for k in path {
+            // Compute the Hamiltonian for this k-point
+            let H = hamiltonian(latticeConstant: latticeConstant, formFactorsS: formFactorS, formFactorsA: formFactorA, reciprocalBasis: reciprocalBasis, k: [k], states: states)
+            
+            // Compute the eigenvalues of the Hamiltonian
+            let eigenVals = computeEigenvalues(A: H)
+            
+            // Sort the eigenvalues array from minimum to maximum
+            let sortedEigenVals = eigenVals.sorted { $0.real < $1.real }
+            
+            // Choose the smallest 8 eigenvalues
+            let smallestEigenVals = Array(sortedEigenVals.prefix(8))
+            
+            // Loop over each eigenvalue and add it to the bands array along with its corresponding k-point
+            for eig in smallestEigenVals {
+                data.append(CGPoint(x:k, y:eig.real))
+            }
         }
+        
+        // Return the array of (k, eigenvalue) pairs
+        return data
+    }
+
+
+
 
     
     
@@ -171,8 +190,18 @@ class Hamiltonian: NSObject {
         // Create complex double array for eigenvalues
         var w = [__CLPK_doublecomplex](repeating: .init(), count: Int(N))
         
+        // Transpose A for the zgeev method since it takes a matrix of the form (cols),(rows)
+        var AT = A
+        for i in 0..<Int(N) {
+            for j in 0..<i {
+                let temp = AT[i][j]
+                AT[i][j] = AT[j][i]
+                AT[j][i] = temp
+            }
+        }
+
         // Create complex double array for matrix A
-        var Aflat = Array(A.joined().map { unsafeBitCast($0, to: __CLPK_doublecomplex.self) })
+        var Aflat = Array(AT.joined().map { unsafeBitCast($0, to: __CLPK_doublecomplex.self) })
         
         // Use UnsafeMutablePointer to get pointers to arrays for passing to ZGEEV function
         var jobvl: Int8 = 78 // ASCII code for 'N', indicating that left eigenvectors will not be computed
@@ -205,21 +234,12 @@ class Hamiltonian: NSObject {
             for i in 0..<Int(N) {
                 eigenvalues.append(Complex<Double>(real: w[i].r, imaginary: w[i].i))
             }
-            
             return eigenvalues
         } else {
             print("ZGEEV failed with info = \(info)")
             return []
         }
-
     }
-
-
-
-
-    
-    
-    
 }
 
 
@@ -258,5 +278,15 @@ struct Complex<T: FloatingPoint>: CustomStringConvertible {
             let imaginary = lhs.real * rhs.imaginary + lhs.imaginary * rhs.real
             return Complex<T>(real: real, imaginary: imaginary)
         }
+}
 
+struct CGPoint: Identifiable {
+    var id = UUID()
+    var x: Double
+    var y: Double
+
+    init(x: Double, y: Double) {
+        self.x = x
+        self.y = y
+    }
 }
