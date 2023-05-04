@@ -170,11 +170,11 @@ struct ContentView: View {
         let asymmetricFormFactors = [Double(3): [13.6059*selectedStructure.pseudopotentialFormFactor_V3A], Double(4): [13.6059*selectedStructure.pseudopotentialFormFactor_V4A], Double(11): [13.6059*selectedStructure.pseudopotentialFormFactor_V11A]]
         
         //In units of 2*pi/a
-        let reciprocalBasis = [-1.0, 1.0, 1.0,
-                               1.0, -1.0, 1.0,
-                               1.0, 1.0, -1.0]
+        let reciprocalBasis = [2*Double.pi/selectedStructure.latticeVariable, -2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable,
+                               2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable, -2*Double.pi/selectedStructure.latticeVariable,
+                               -2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable] //2*Double.pi/selectedStructure.latticeVariable  ADD THIS
         
-        let samplePoints = 100 // Sample Points per k-path
+        let samplePoints = 1 // Sample Points per k-path
         
         //Initialize Symmetry Points in Brillouin zone:
         
@@ -186,22 +186,23 @@ struct ContentView: View {
         let U = [0.25, 0.25, 1.0]
 
         // We now define the k-paths
-        let lambd = linpath(a: L, b: G, n: samplePoints, endpoint: false)
-        let delta = linpath(a: G, b: X, n: samplePoints, endpoint: false)
-        let x_uk = linpath(a: X, b: U, n: samplePoints/4, endpoint: false)
-        let sigma = linpath(a: K, b: G, n: samplePoints, endpoint: true)
+//        let lambd = linpath(a: L, b: G, n: samplePoints, endpoint: false)
+//        let delta = linpath(a: G, b: X, n: samplePoints, endpoint: false)
+//        let x_uk = linpath(a: X, b: U, n: samplePoints/4, endpoint: false)
+//        let sigma = linpath(a: K, b: G, n: samplePoints, endpoint: true)
+        
+        let lambda = linpath(a: G, b: G, n: samplePoints, endpoint: true)
 
         //Below we run the actual calculation of the band structure, making use of the high symmetry of the diamond lattice with a path
         // L → Γ → X → U / K → Γ
 
         let myHammy = Hamiltonian() //We define Hamiltonian Object
-        let path = lambd + delta + x_uk + sigma // Merge all paths into one array
+        let path = lambda //+ delta + x_uk + sigma // Merge all paths into one array
         
         let bands = myHammy.bandStructure(latticeConstant: selectedStructure.latticeVariable, formFactorS: symmetricFormfactors, formFactorA: asymmetricFormFactors, reciprocalBasis: reciprocalBasis, states: 5, path: path)
     
         result = bands//.sorted(by: { $0.x < $1.x })
         
-        print(result)
 
     }
 
@@ -213,25 +214,30 @@ struct ContentView: View {
 
         // Get the shortest length of either a or b
         let k = min(a.count, b.count)
-        
+
         // Calculate the step size for each dimension
-        let step = (0..<k).map { (b[$0] - a[$0]) / Double(n - 1) }
-        
+        let step = (0..<k).map { (b[$0] - a[$0]) / Double(n) }
+
         // Calculate the points along the path
-        var points = (0..<n).map { i in
-            (0..<k).map { j in
-                a[j] + step[j] * Double(i)
+        var points = [Double]()
+        for i in stride(from: 0.0, to: Double(n), by: 1.0) {
+            let p = (0..<k).map { j in
+                a[j] + step[j] * i
             }
+            points.append(contentsOf: p)
         }
-        
+
         // Add the endpoint if necessary
         if endpoint && n > 1 {
-            points[n-1] = b
+            points.replaceSubrange((n-1)*k..<(n*k), with: b)
         }
-        
-        // Flatten the points array and return it
-        return points.flatMap { $0 }
+
+        return points
     }
+
+
+
+
 
 }
 
