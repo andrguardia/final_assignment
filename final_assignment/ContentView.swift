@@ -146,7 +146,7 @@ struct ContentView: View {
                             PointMark(
                                 x: .value("k-Point", $0.x),
                                 y: .value("Eigenvalue", $0.y)
-                            ).symbolSize(40.0)
+                            ).symbolSize(50.0)
                         }
                         .chartYAxis {
                             AxisMarks(values: .automatic(desiredCount: 10)){
