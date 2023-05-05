@@ -56,6 +56,18 @@ class Hamiltonian: NSObject {
         
         return coeff
     }
+    
+    func calculateG(coeff: [Double], basis: [Double]) -> [Double] {
+        //This function is used to perform matrix-vector multiplication to generate the reciprocal basis vector G. We start by defining G as an empty array of Doubles
+        var g = [Double]()
+        //We iterate over the basis matrix and perform dot product operations between the coefficients vector and each row vector in the basis matrix
+        for i in 0..<3 {
+            let row = [basis[i], basis[i+3], basis[i+6]] // Extracting the ith row of the matrix
+            let dotProduct = zip(row, coeff).map(*).reduce(0, +) // Calculating the dot product between the row and the coefficient vector
+            g.append(dotProduct)
+        }
+        return g
+    }
 
 
     
@@ -68,7 +80,7 @@ class Hamiltonian: NSObject {
         
         let v = zip(k, g).map { $0 + $1 }
         
-        return KINETIC_CONSTANT * v.reduce(0, { $0 + pow($1, 2) })
+        return KINETIC_CONSTANT * v.reduce(0, {$0 + pow($1, 2)})
     }
     
     //With two atoms in the unit cell of the diamond (or zincblende) lattice our potential component must include both of their contributions. As per Cohen and Bergstresser choose an origin halfway between the two atoms, both situated at::
@@ -123,15 +135,16 @@ class Hamiltonian: NSObject {
                 if row == col {
                     // calculate the reciprocal lattice vector for this row
                     let coeffs = coefficients(m: row - Int(n/2), states: N, latticeConstant: latticeConstant)
-                    let g = [dot(coeffs, basis)] //FIX THE COMPUTATION OF THE G VECTOR
+                    let g = calculateG(coeff: coeffs, basis: basis) // Multiplying the coefficient vector with the basis matrix to obtain the resulting vector g
+                    
                     // calculate the kinetic energy and assign it to the matrix
                     H[row][col] = Complex<Double>(real: kinetic_c * kinetic(k: k, g: g), imaginary: 0.0)
                 } else{
                     // calculate the reciprocal lattice vector for this pair of rows and columns
     
                     let coeffs = coefficients(m: row - col, states: N, latticeConstant: latticeConstant)
-
-                    let g = [dot(coeffs, basis)]
+                    
+                    let g = calculateG(coeff: coeffs, basis: basis) // Multiplying the coefficient vector with the basis matrix to obtain the resulting vector g
                     
                     if Int(dot(g,g))==3{
                         H[row][col] = potential(g: g, tau: offset, sym: ffS_3, asym: ffA_3)
@@ -163,24 +176,26 @@ class Hamiltonian: NSObject {
     
 
     
-    func bandStructure(latticeConstant: Double, ffS_3: Double, ffS_8:Double, ffS_11:Double, ffA_3:Double, ffA_4:Double, ffA_11:Double, reciprocalBasis: [Double], states: Int, path: [Double]) -> [CGPoint] {
+    func bandStructure(latticeConstant: Double, ffS_3: Double, ffS_8:Double, ffS_11:Double, ffA_3:Double, ffA_4:Double, ffA_11:Double, reciprocalBasis: [Double], states: Int, path: [[Double]]) -> [CGPoint] {
         // Initialize empty array of tuples to store (k, eigenvalue) pairs
         var data = [CGPoint]()
         
         // Loop over each k-point in the path
-        for k in path {
+        for i in path {
             // Compute the Hamiltonian for this k-point
-            let H = hamiltonian(latticeConstant: latticeConstant, ffS_3: ffS_3, ffS_8:ffS_8, ffS_11:ffS_11, ffA_3:ffA_3, ffA_4:ffA_4, ffA_11:ffA_11, reciprocalBasis: reciprocalBasis, k: [k], states: states)
+            let H = hamiltonian(latticeConstant: latticeConstant, ffS_3: ffS_3, ffS_8:ffS_8, ffS_11:ffS_11, ffA_3:ffA_3, ffA_4:ffA_4, ffA_11:ffA_11, reciprocalBasis: reciprocalBasis, k: i, states: states)
+            
             // Compute the eigenvalues of the Hamiltonian
             let eigenVals = computeEigenvalues(A: H)
             
+            let minEigenVal = eigenVals.sorted { $0.real < $1.real }
+                                       .filter { $0.real >= -6 && $0.real <= 6 }
+                                       .prefix(10)
             
-            let filteredEigenVals = eigenVals.filter { $0.real >= -10 && $0.real <= 10 }
-            
-            
-            // Loop over each eigenvalue and add it to the bands array along with its corresponding k-point
-            for eig in filteredEigenVals {
-                data.append(CGPoint(x:k, y:eig.real))
+            //We represent the magnitude of the k vector as k dot k
+//            // Loop over each eigenvalue and add it to the bands array along with its corresponding k-point
+            for eig in minEigenVal {
+                data.append(CGPoint(x:dot(i,i), y:eig.real))
             }
         }
         

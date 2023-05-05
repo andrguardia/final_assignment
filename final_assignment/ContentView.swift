@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Charts
+import Accelerate
 
 
 struct Structure: Hashable {
@@ -65,101 +66,115 @@ struct ContentView: View {
         
         VStack(alignment: .center) {
             
-            Text("Band Structure Calculator")
-                .font(.title)
-                .fontWeight(.bold)
-                .padding(.all, 25)
-            
-            Text("This app was created by Andre Guardia as the final project for his PHYS 440 class. The app calculates the band structures for all 14 diamond and zincblende structures described in the paper: Band Structures and Pseudopotential Form Factors for Fourteen Semiconductors of the Diamond and Zinc-blende Structures by Marvin L. Cohen and T.K. Bergstresser")
-                .multilineTextAlignment(.leading)
-                .padding(.leading, 50)
-                .padding(.trailing, 50)
-            
-            Divider()
-            
-            Text("Select Material")
-                .font(.title2)
-                .fontWeight(.bold)
-                .padding(.all, 25)
-            
-            Text("Please select a semiconductor structure from the dropdown menu:")
-                .padding(.leading, 50)
-                .padding(.trailing, 50)
-                .frame(maxWidth: .infinity, alignment: .center)
-            
-            Picker(selection: $selectedStructure, label: Text("")) {
-                ForEach(structures, id: \.self) { structure in
-                    Text(structure.name)
-                }
-            }
-            .pickerStyle(MenuPickerStyle())
-            .frame(width: 100)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.top, 5)
-
-            Text("Band Structure: \(selectedStructure.name)")
-                .multilineTextAlignment(.leading)
-                .padding(.leading, 50)
-                .padding(.trailing, 50)
-                .padding(.top, 5)
-            
-            Text("Lattice Variable [Å]: \(selectedStructure.latticeVariable)")
-                .multilineTextAlignment(.leading)
-                .padding(.leading, 50)
-                .padding(.trailing, 50)
-                .padding(.top, 5)
-            
             HStack{
-                Button(action: {calculate()}) {
-                    Text("Calculate")
+                VStack(alignment: .leading){
+                    Text("Band Structure Calculator")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .padding(.all, 50)
+                    
+                    Text("This app was created by Andre Guardia as the final project for his PHYS 440 class. The app calculates the band structures for all 14 diamond and zincblende structures described in the paper: Band Structures and Pseudopotential Form Factors for Fourteen Semiconductors of the Diamond and Zinc-blende Structures by Marvin L. Cohen and T.K. Bergstresser")
+                        .multilineTextAlignment(.leading)
+                        .padding(.leading, 50)
+                        .padding(.trailing, 50)
+                    Divider()
+                    
+                    Text("Select Material")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .padding(.all, 25)
+                    
+                    Text("Please select a semiconductor structure from the dropdown menu:")
+                        .padding(.leading, 50)
+                        .padding(.trailing, 50)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    
+                    Picker(selection: $selectedStructure, label: Text("")) {
+                        ForEach(structures, id: \.self) { structure in
+                            Text(structure.name)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                    .frame(width: 100)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 5)
+
+                    Text("Band Structure: \(selectedStructure.name)")
+                        .multilineTextAlignment(.leading)
+                        .padding(.leading, 50)
+                        .padding(.trailing, 50)
+                        .padding(.top, 5)
+                    
+                    Text("Lattice Variable [Å]: \(selectedStructure.latticeVariable)")
+                        .multilineTextAlignment(.leading)
+                        .padding(.leading, 50)
+                        .padding(.trailing, 50)
+                        .padding(.top, 5)
+                    
+                    HStack{
+                        Button(action: {calculate()}) {
+                            Text("Calculate")
+                        }
+                        .padding(.trailing, 50)
+                        
+                        Button(action: {clear()}) {
+                            Text("Clear")
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 25)
                 }
-                .padding(.trailing, 50)
                 
-                Button(action: {clear()}) {
-                    Text("Clear")
+                Divider()
+                VStack {
+                    
+                    Text("Results")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .padding(.all, 25)
+                    
+                    Text("Band Structure: \(selectedStructure.name)")
+                        .font(.title2)
+                    
+                    HStack{
+                        Spacer().frame(width: 100)
+                        Text("E (eV))")
+                            .font(.title3)
+                            .rotationEffect(Angle(degrees: -90))
+                        
+                        Chart(result) {
+                            PointMark(
+                                x: .value("k-Point", $0.x),
+                                y: .value("Eigenvalue", $0.y)
+                            ).symbolSize(40.0)
+                        }
+                        .chartYAxis {
+                            AxisMarks(values: .automatic(desiredCount: 10)){
+                                AxisValueLabel(format: Decimal.FormatStyle.number)
+                                AxisGridLine()
+                            }
+                            
+                        }.chartYScale(domain: [0, 6])
+                        .chartXAxis {
+                            AxisMarks(values: .automatic(desiredCount: 10)){
+                                AxisValueLabel(format: Decimal.FormatStyle.number)
+                                AxisGridLine()
+                            }
+                        }.chartXScale(domain: [0, 1])
+        
+                        Spacer().frame(width: 100)
+                    }
+
+                    Text("k-Points")
+                        .font(.title3)
+                    Spacer().frame(height:50)
+                    
                 }
+                
             }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.top, 25)
-            Divider()
             
         }
         
-        VStack(alignment: .center){
-            Text("Results")
-                .font(.title2)
-                .fontWeight(.bold)
-                .padding(.all, 25)
-            
-            VStack {
-                Text("Band Structure: \(selectedStructure.name)")
-                    .font(.title)
-                    .padding(.top, 20)
-                
-                HStack{
-                    Text("Energy [eV]")
-                        .font(.title3)
-                        .rotationEffect(Angle(degrees: -90))
-                    
-                    Chart(result) {
-                        PointMark(
-                            x: .value("k-Point", $0.x),
-                            y: .value("Eigenvalue", $0.y)
-                        )
-                    }.chartYAxis {
-                        AxisMarks(values: .automatic())
-                    }.chartXAxis {
-                        AxisMarks(values: .automatic())
-                    }
-                    Spacer().frame(width: 70)
-                }
-                Text("k-Points")
-                    .font(.title3)
-                Spacer().frame(height:25)
-                
-            }
-            
-        }
 
 
     }
@@ -178,37 +193,137 @@ struct ContentView: View {
         let ffA_11 = 13.6059*selectedStructure.pseudopotentialFormFactor_V11A
         
         //In units of 2*pi/a
-        let reciprocalBasis = [2*Double.pi/selectedStructure.latticeVariable, -2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable,
-                               2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable, -2*Double.pi/selectedStructure.latticeVariable,
-                               -2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable, 2*Double.pi/selectedStructure.latticeVariable] //2*Double.pi/selectedStructure.latticeVariable  ADD THIS
+        let reciprocalBasis = [1.0, 1.0, -1.0,
+                               1.0, -1.0, 1.0,
+                               -1.0, 1.0, 1.0]
         
-        let samplePoints = 50 // Sample Points per k-path
+        let samplePoints = 100 // Sample Points per k-path
+        
+        // Basis vectors for reciprocal lattice in 2pi/a units
+                
+//        let h1 = [1.0, 1.0, -1.0]
+//        let h2 = [1.0, -1.0, 1.0]
+//        let h3 = [-1.0, 1.0, 1.0]
+        
+//        var n1 = 0, n2 = 0, n3 = 0
+        
+        // Tau (x,y,z) is the atomic basis vector
+        let k_units = 2.0*Double.pi/selectedStructure.latticeVariable
+        
+        // tau = a(1/8,1/8,1/8)
+//        let tau : [Double] = [1.0/8.0, 1.0/8.0, 1.0/8.0]
+
+        // Symmetry directions: (in units of 2Pi/a)
+        //      Point   k-vector
+        //      _____   _______
+        //      Gamma   (0,0,0)
+        //      X       (0,0,1)
+        //      L       (1/2,1/2,1/2)
+        //      K       (3/4,0,3/4)
         
         //Initialize Symmetry Points in Brillouin zone:
         
-        let G = [0.0, 0.0, 0.0]
-        let X = [0.0, 0.5, 0.5]
-        let L = [0.5, 0.5, 0.5]
-        //let U = [0.25, 0.625, 0.625]
-        let K = [0.375, 0.75, 0.375]
+        let LbaseVec = [0.5, 0.5, 0.5]
+        let GbaseVec = [0.0, 0.0, 0.0]
+        let XbaseVec = [0.0, 0.0, 1.0]
+        let KbaseVec = [0.75, 0.0, 0.75]
+        let UbaseVec = [0.25, 0.25, 1.0]
+
+        // Number and list of k-vectors
+        /// NEED TO LOOP THROUGH PROGRAM UNTIL ALL k VECTORS ARE ACCOUNTED FOR
+                
+        // Generate k-vector
+        // Need enough k vector points in each direction to have a nice plot and find the minimum and maximum of each band
+        
+        
+        var k_vecArray = [[Double]]() //Initialize K vector array
+        // Doesn't include the units of 2pi/a until actualy k-vectors are generated
+        //loop between each high symmetry points
+        //Gamma = (0,0,0) and L = (.5,.5,.5)
+        
+        // L to Gamma
+        var LGdiff = [0.0,0.0,0.0]
+        vDSP_vsubD(LbaseVec, 1, GbaseVec, 1, &LGdiff, 1, 3)
+        var xincrement = LGdiff[0] / Double(samplePoints)
+        var yincrement = LGdiff[1] / Double(samplePoints)
+        var zincrement = LGdiff[2] / Double(samplePoints)
+        
+        var k_vec = [0.0,0.0,0.0]
+        
+        for i in 0...(samplePoints-1) {
+            
+            let increment = Double(i)
+
+            k_vec[0] = (LbaseVec[0] + xincrement * increment)
+            k_vec[1] = (LbaseVec[1] + yincrement * increment)
+            k_vec[2] = (LbaseVec[2] + zincrement * increment)
+            k_vecArray.append([k_units*k_vec[0], k_units*k_vec[1], k_units*k_vec[2]])
+        }
+        
+        // Gamma to X
+        var GXdiff = [0.0,0.0,0.0]
+        vDSP_vsubD(GbaseVec, 1, XbaseVec, 1, &GXdiff, 1, 3)
+        xincrement = GXdiff[0]/Double(samplePoints)
+        yincrement = GXdiff[1]/Double(samplePoints)
+        zincrement = GXdiff[2]/Double(samplePoints)
+
+        k_vec = [0.0,0.0,0.0]
+        for i in 1...(samplePoints-1) {
+
+            let inc = Double(i)
+
+            k_vec[0] = (GbaseVec[0] + xincrement * inc)
+            k_vec[1] = (GbaseVec[1] + yincrement * inc)
+            k_vec[2] = (GbaseVec[2] + zincrement * inc)
+
+            k_vecArray.append([k_vec[0], k_vec[1], k_vec[2]])
+        }
+
+        // X to U
+        var XKdiff = [0.0,0.0,0.0]
+        vDSP_vsubD(XbaseVec, 1, UbaseVec, 1, &XKdiff, 1, 3)
+        xincrement = XKdiff[0] / Double(samplePoints/2)
+        yincrement = XKdiff[1] / Double(samplePoints/2)
+        zincrement = XKdiff[2] / Double(samplePoints/2)
+
+        k_vec = [0.0,0.0,0.0]
+        for i in 1...(samplePoints/2-1) {
+
+            let inc = Double(i)
+            k_vec[0] = (XbaseVec[0] + xincrement * inc)
+            k_vec[1] = (XbaseVec[1] + yincrement * inc)
+            k_vec[2] = (XbaseVec[2] + zincrement * inc)
+
+            k_vecArray.append([k_vec[0], k_vec[1], k_vec[2]])
+        }
+
+        // K to G
+        var KGdiff = [0.0,0.0,0.0]
+        vDSP_vsubD(KbaseVec, 1, GbaseVec, 1, &KGdiff, 1, 3)
+        xincrement = KGdiff[0] / 20.0
+        yincrement = KGdiff[1] / 20.0
+        zincrement = KGdiff[2] / 20.0
+
+        k_vec = [0.0,0.0,0.0]
+        for i in 1...(samplePoints-1) {
+
+            let inc = Double(i)
+            k_vec[0] = (KbaseVec[0] + xincrement * inc)
+            k_vec[1] = (KbaseVec[1] + yincrement * inc)
+            k_vec[2] = (KbaseVec[2] + zincrement * inc)
+
+            k_vecArray.append([k_vec[0], k_vec[1], k_vec[2]])
+        }
+        
+        //We now define Hamiltonian Object
+        let myHammy = Hamiltonian()
+        //We now define k-point path
+        let path = k_vecArray
+        print(path.count)
         
 
-        // We now define the k-paths
-        let lambd = linpath(a: L, b: G, n: samplePoints, endpoint: false)
-        let delta = linpath(a: G, b: X, n: samplePoints, endpoint: false)
-        let x_uk = linpath(a: X, b: K, n: samplePoints, endpoint: false)
-        let sigma = linpath(a: K, b: G, n: samplePoints, endpoint: true)
-        
-        //let lambda = linpath(a: G, b: G, n: samplePoints, endpoint: true)
-
-        //Below we run the actual calculation of the band structure, making use of the high symmetry of the diamond lattice with a path
-        // L → Γ → X → U / K → Γ
-
-        let myHammy = Hamiltonian() //We define Hamiltonian Object
-        let path = lambd + delta + x_uk + sigma // Merge all paths into one array
-        
         let bands = myHammy.bandStructure(latticeConstant: selectedStructure.latticeVariable, ffS_3: ffS_3, ffS_8:ffS_8, ffS_11:ffS_11, ffA_3:ffA_3, ffA_4:ffA_4, ffA_11:ffA_11, reciprocalBasis: reciprocalBasis, states: 5, path: path)
-    
+
         result = bands//.sorted(by: { $0.x < $1.x })
         
 
@@ -217,48 +332,20 @@ struct ContentView: View {
     func clear(){
     }
     
-    func linpath(a: [Double], b: [Double], n: Int = 50, endpoint: Bool = true) -> [Double] {
-        // Create an array of n equally spaced points along the path a -> b, inclusive.
+//    func linpath(a: [Double], b: [Double], n: Int = 50, endpoint: Bool = true) -> [Double] {
+//        // Create an array of n equally spaced points along the path a -> b, inclusive.
+//
+//        // Get the shortest length of either a or b
+//
+//
+//        return points
+//    }
 
-        // Get the shortest length of either a or b
-        let k = min(a.count, b.count)
-
-        // Calculate the step size for each dimension
-        let step = (0..<k).map { (b[$0] - a[$0]) / Double(n-1) }
-
-        // Calculate the points along the path
-        var points = [Double]()
-        for i in stride(from: 0.0, to: Double(n), by: 1.0) {
-            let p = (0..<k).map { j in
-                a[j] + step[j] * i
-            }
-            points.append(contentsOf: p)
-        }
-
-        // Add the endpoint if necessary
-        if endpoint && n > 1 {
-            points.replaceSubrange((n-1)*k..<(n*k), with: b)
-        }
-
-        return points
-    }
+    
 
 
 
 
-
-}
-
-func removeDuplicates(from points: [CGPoint]) -> [CGPoint] {
-    var uniquePoints = [CGPoint]()
-    for point in points {
-        if let index = uniquePoints.firstIndex(where: { $0.x == point.x }) {
-            uniquePoints[index] = point
-        } else {
-            uniquePoints.append(point)
-        }
-    }
-    return uniquePoints
 }
 
 
